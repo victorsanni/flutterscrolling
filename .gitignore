@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+site/
+notes/facts/
+example_code/.dart_tool/
+example_code/build/
+example_code/pubspec.lock
