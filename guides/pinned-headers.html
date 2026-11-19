@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>Pinned and Floating Headers | Flutter Scrolling</title>
+<meta name="description" content="Choosing between PinnedHeaderSliver, SliverResizingHeader, SliverFloatingHeader, SliverPersistentHeader, and SliverAppBar.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+</head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a class="active" href="../guides/index.html">Guides</a></li><li><a href="../api/index.html">API</a></li><li><a href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>Guides</h3><ul><li><a href="../guides/index.html" title="Overview">Overview</a></li><li><a href="../guides/how-scrolling-works.html" title="How Scrolling Works">How Scrolling Works</a></li><li><a href="../guides/scroll-position.html" title="Scroll Position">Scroll Position</a></li><li><a href="../guides/scroll-physics.html" title="Scroll Physics">Scroll Physics</a></li><li><a href="../guides/scroll-activities.html" title="Scroll Activities">Scroll Activities</a></li><li><a href="../guides/scroll-controllers.html" title="Scroll Controllers">Scroll Controllers</a></li><li><a href="../guides/scroll-notifications.html" title="Scroll Notifications">Scroll Notifications</a></li><li><a href="../guides/scroll-behavior.html" title="Scroll Behavior">Scroll Behavior</a></li></ul></div><div class="sidebar-group"><h3>Slivers</h3><ul><li><a href="../guides/viewports.html" title="Viewports">Viewports</a></li><li><a href="../guides/sliver-layout.html" title="Sliver Layout">Sliver Layout</a></li><li><a href="../guides/lazy-children.html" title="Lazy Children">Lazy Children</a></li><li><a class="active" href="../guides/pinned-headers.html" title="Pinned Headers">Pinned Headers</a></li><li><a href="../guides/scroll-views.html" title="Scroll Views">Scroll Views</a></li></ul></div><div class="sidebar-group"><h3>Going Further</h3><ul><li><a href="../guides/revealing-content.html" title="Revealing Content">Revealing Content</a></li><li><a href="../guides/nested-scrolling.html" title="Nested Scrolling">Nested Scrolling</a></li><li><a href="../guides/two-dimensional-scrolling.html" title="2D Scrolling">2D Scrolling</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>Pinned and Floating Headers</h1><p>Choosing between PinnedHeaderSliver, SliverResizingHeader, SliverFloatingHeader, SliverPersistentHeader, and SliverAppBar.</p></header>
+<section class="content">
+<p>This guide walks experienced Flutter developers through Flutter's header slivers. By the end, you'll know which of the four focused header slivers (<code>PinnedHeaderSliver</code>, <code>SliverResizingHeader</code>, <code>SliverFloatingHeader</code>, and <code>SliverPersistentHeader</code>) fits each UI pattern, and how all of them work under the hood using <code>layoutExtent</code>, <code>paintExtent</code>, and <code>overlap</code>. We'll skip <code>NestedScrollView</code> overlap injection for now — this is about single-viewport headers, and only single-viewport headers.</p>
+<h2 id="what-this-guide-covers"><span>What This Guide Covers</span><a class="anchor" href="#what-this-guide-covers" aria-label="Link to this section">#</a></h2>
+<ul><li><strong>One Trick Behind Every Sticky Header</strong> — How shrinking <code>layoutExtent</code> while keeping <code>paintExtent</code> lets content slide underneath.</li><li><strong>The Three Simple Header Widgets</strong> — <code>PinnedHeaderSliver</code>, <code>SliverResizingHeader</code>, and <code>SliverFloatingHeader</code> (and why Flutter added them).</li><li><strong><code>SliverPersistentHeader</code> and <code>SliverAppBar</code></strong> — When you need <code>shrinkOffset</code>-driven custom builds or full Material app bar chrome.</li><li><strong>Stacking Multiple Headers with <code>overlap</code></strong> — What happens when two pinned slivers meet at the top edge.</li><li><strong>Common Pitfalls</strong> — Forgetting <code>shouldRebuild</code> on a delegate, hardcoding heights that clip large fonts, and obstructing <code>ensureVisible</code>.</li></ul>
+<h2 id="one-trick-behind-every-sticky-header"><span>One Trick Behind Every Sticky Header</span><a class="anchor" href="#one-trick-behind-every-sticky-header" aria-label="Link to this section">#</a></h2>
+<p>Every pinned or floating header in Flutter relies on one distinction in <code>SliverGeometry</code>:</p>
+<ul><li><code>paintExtent</code> is how tall the header <strong>draws</strong> on screen.</li><li><code>layoutExtent</code> is how far down the header <strong>pushes the next sliver</strong>.</li></ul>
+<p>While a <code>56px</code> header is still scrolling toward the top edge (<code>constraints.scrollOffset == 0</code>), both <code>paintExtent</code> and <code>layoutExtent</code> are <code>56.0</code>. Once earlier slivers scroll away and <code>constraints.scrollOffset</code> climbs from <code>0</code> to <code>56</code>, <code>paintExtent</code> stays <code>56.0</code> while <code>layoutExtent</code> shrinks from <code>56.0</code> down to <code>0.0</code>. The sliver right after the header now lays out starting at <code>y = 0</code> — sliding underneath the header — while the header continues painting on top of it.</p>
+<p>You can read and interact with every line of that calculation in the <a href="../examples/sticky-header.html">Sticky Header Sliver</a> example.</p>
+<h2 id="the-three-simple-header-widgets"><span>The Three Simple Header Widgets</span><a class="anchor" href="#the-three-simple-header-widgets" aria-label="Link to this section">#</a></h2>
+<p>For years, pinning any widget inside a <code>CustomScrollView</code> forced you to write a verbose <code>SliverPersistentHeaderDelegate</code> subclass with hardcoded <code>minExtent</code> and <code>maxExtent</code> numbers. Modern Flutter ships three composable widgets that measure their child automatically without a delegate class:</p>
+<ol><li><strong><code>PinnedHeaderSliver</code></strong> — Takes any single <code>child</code> widget, measures its natural box height during layout, scrolls normally until reaching the viewport's leading edge, and pins there permanently.</li><li><strong><code>SliverResizingHeader</code></strong> — Smoothly shrinks a <code>child</code> between the natural height of a <code>maxExtentPrototype</code> widget and a <code>minExtentPrototype</code> widget as the user scrolls, then stays pinned at <code>minExtentPrototype</code>'s height.</li><li><strong><code>SliverFloatingHeader</code></strong> — Scrolls off-screen as the user scrolls down, and immediately slides back into view at the top of the viewport as soon as the user reverses direction (<code>userScrollDirection == ScrollDirection.forward</code>), snapping cleanly to fully shown or fully hidden when scrolling stops.</li></ol>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">CustomScrollView</span><span class="t-b0">(</span>
+  slivers<span class="t-p">:</span> <span class="t-p">&lt;</span><span class="t-t">Widget</span><span class="t-p">&gt;</span><span class="t-b1">[</span>
+    <span class="t-k">const</span> <span class="t-t">PinnedHeaderSliver</span><span class="t-b2">(</span>
+      child<span class="t-p">:</span> <span class="t-t">ColoredBox</span><span class="t-b3">(</span>
+        color<span class="t-p">:</span> <span class="t-t">Color</span><span class="t-b4">(</span><span class="t-n">0xFF111111</span><span class="t-b4">)</span><span class="t-p">,</span>
+        child<span class="t-p">:</span> <span class="t-t">Padding</span><span class="t-b4">(</span>
+          padding<span class="t-p">:</span> <span class="t-t">EdgeInsets</span><span class="t-p">.</span><span class="t-m">all</span><span class="t-b5">(</span><span class="t-n">16.0</span><span class="t-b5">)</span><span class="t-p">,</span>
+          child<span class="t-p">:</span> <span class="t-t">Text</span><span class="t-b5">(</span><span class="t-s">'Pinned search bar — sizes itself automatically'</span><span class="t-b5">)</span><span class="t-p">,</span>
+        <span class="t-b4">)</span><span class="t-p">,</span>
+      <span class="t-b3">)</span><span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">,</span>
+    <span class="t-t">SliverList</span><span class="t-p">.</span><span class="t-m">builder</span><span class="t-b2">(</span>
+      itemCount<span class="t-p">:</span> <span class="t-n">50</span><span class="t-p">,</span>
+      itemBuilder<span class="t-p">:</span> <span class="t-b3">(</span><span class="t-t">BuildContext</span> context<span class="t-p">,</span> <span class="t-t">int</span> i<span class="t-b3">)</span> <span class="t-p">=&gt;</span> <span class="t-t">ListTile</span><span class="t-b3">(</span>title<span class="t-p">:</span> <span class="t-t">Text</span><span class="t-b4">(</span><span class="t-s">'Item $i'</span><span class="t-b4">)</span><span class="t-b3">)</span><span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">,</span>
+  <span class="t-b1">]</span><span class="t-p">,</span>
+<span class="t-b0">)</span></code></pre></div>
+<p><strong>Reach for <code>PinnedHeaderSliver</code>, <code>SliverResizingHeader</code>, or <code>SliverFloatingHeader</code> first.</strong> Because they measure child widgets directly during layout instead of asking you for hardcoded <code>double</code> extents, they adapt automatically when users enable large accessibility text scales.</p>
+<h2 id="sliverpersistentheader-and-sliverappbar"><span><code>SliverPersistentHeader</code> and <code>SliverAppBar</code></span><a class="anchor" href="#sliverpersistentheader-and-sliverappbar" aria-label="Link to this section">#</a></h2>
+<p>You still want <code>SliverPersistentHeader</code> (or Material's <code>SliverAppBar</code>, which wraps <code>SliverPersistentHeader</code> internally) in two situations:</p>
+<ul><li>Your header needs the exact pixel <code>shrinkOffset</code> and <code>overlapsContent</code> boolean during <code>build</code> to cross-fade titles, scale avatars, or toggle elevation shadows.</li><li>You want <code>SliverAppBar</code>'s built-in combinations of <code>pinned</code>, <code>floating</code>, <code>snap</code>, <code>stretch</code> (overscroll zoom), and <code>FlexibleSpaceBar</code>.</li></ul>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">class</span> <span class="t-t">SectionHeaderDelegate</span> <span class="t-k">extends</span> <span class="t-t">SliverPersistentHeaderDelegate</span> <span class="t-b0">{</span>
+  <span class="t-k">const</span> <span class="t-t">SectionHeaderDelegate</span><span class="t-b1">(</span><span class="t-b2">{</span><span class="t-k">required</span> <span class="t-k">this</span><span class="t-p">.</span>title<span class="t-b2">}</span><span class="t-b1">)</span><span class="t-p">;</span>
+  <span class="t-k">final</span> <span class="t-t">String</span> title<span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">double</span> <span class="t-k">get</span> minExtent <span class="t-p">=&gt;</span> <span class="t-n">48.0</span><span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">double</span> <span class="t-k">get</span> maxExtent <span class="t-p">=&gt;</span> <span class="t-n">96.0</span><span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">Widget</span> <span class="t-m">build</span><span class="t-b1">(</span><span class="t-t">BuildContext</span> context<span class="t-p">,</span> <span class="t-t">double</span> shrinkOffset<span class="t-p">,</span> <span class="t-t">bool</span> overlapsContent<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-k">final</span> <span class="t-t">double</span> t <span class="t-p">=</span> <span class="t-b2">(</span>shrinkOffset <span class="t-p">/</span> <span class="t-b3">(</span>maxExtent <span class="t-p">-</span> minExtent<span class="t-b3">)</span><span class="t-b2">)</span><span class="t-p">.</span><span class="t-m">clamp</span><span class="t-b2">(</span><span class="t-n">0.0</span><span class="t-p">,</span> <span class="t-n">1.0</span><span class="t-b2">)</span><span class="t-p">;</span>
+    <span class="t-f">return</span> <span class="t-t">ColoredBox</span><span class="t-b2">(</span>
+      color<span class="t-p">:</span> overlapsContent <span class="t-p">?</span> <span class="t-k">const</span> <span class="t-t">Color</span><span class="t-b3">(</span><span class="t-n">0xFF1A1A1A</span><span class="t-b3">)</span> <span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">Color</span><span class="t-b3">(</span><span class="t-n">0xFF111111</span><span class="t-b3">)</span><span class="t-p">,</span>
+      child<span class="t-p">:</span> <span class="t-t">Align</span><span class="t-b3">(</span>
+        alignment<span class="t-p">:</span> <span class="t-t">Alignment</span><span class="t-p">.</span><span class="t-m">lerp</span><span class="t-b4">(</span><span class="t-t">Alignment</span><span class="t-p">.</span>bottomLeft<span class="t-p">,</span> <span class="t-t">Alignment</span><span class="t-p">.</span>centerLeft<span class="t-p">,</span> t<span class="t-b4">)</span><span class="t-p">!,</span>
+        child<span class="t-p">:</span> <span class="t-t">Padding</span><span class="t-b4">(</span>
+          padding<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">EdgeInsets</span><span class="t-p">.</span><span class="t-m">symmetric</span><span class="t-b5">(</span>horizontal<span class="t-p">:</span> <span class="t-n">16.0</span><span class="t-b5">)</span><span class="t-p">,</span>
+          child<span class="t-p">:</span> <span class="t-t">Text</span><span class="t-b5">(</span>title<span class="t-b5">)</span><span class="t-p">,</span>
+        <span class="t-b4">)</span><span class="t-p">,</span>
+      <span class="t-b3">)</span><span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">bool</span> <span class="t-m">shouldRebuild</span><span class="t-b1">(</span><span class="t-t">SectionHeaderDelegate</span> oldDelegate<span class="t-b1">)</span> <span class="t-p">=&gt;</span> title <span class="t-p">!=</span> oldDelegate<span class="t-p">.</span>title<span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="stacking-multiple-headers-with-overlap"><span>Stacking Multiple Headers with <code>overlap</code></span><a class="anchor" href="#stacking-multiple-headers-with-overlap" aria-label="Link to this section">#</a></h2>
+<p>What happens if you place <em>two</em> <code>PinnedHeaderSliver</code>s inside the same <code>CustomScrollView</code>?</p>
+<p>When the first <code>56px</code> header is pinned, its <code>paintExtent</code> (<code>56.0</code>) exceeds its <code>layoutExtent</code> (<code>0.0</code>) by <code>56.0</code>. <code>RenderViewport</code> passes that <code>56.0</code> difference into the next sliver as <code>constraints.overlap</code>.</p>
+<p><code>PinnedHeaderSliver</code> sets <code>paintOrigin: constraints.overlap</code>. As a result, the second <code>PinnedHeaderSliver</code> pins at <code>y = 56.0</code> right <em>below</em> the first header rather than painting directly over it! (If instead you want section headers that <em>push</em> the previous section's header off-screen, packages like <code>sliver_tools</code> or a custom multi-sliver coordinate their <code>paintOrigin</code>s accordingly.)</p>
+<h2 id="common-pitfalls"><span>Common Pitfalls</span><a class="anchor" href="#common-pitfalls" aria-label="Link to this section">#</a></h2>
+<p><strong>Returning <code>false</code> from <code>SliverPersistentHeaderDelegate.shouldRebuild</code> when fields changed.</strong> If <code>shouldRebuild</code> always returns <code>false</code>, rebuilding the parent widget with a new <code>title</code> or theme color leaves the header showing stale UI until <code>shrinkOffset</code> happens to change. Compare every field your <code>build</code>, <code>minExtent</code>, or <code>maxExtent</code> reads.</p>
+<p><strong>Hardcoding <code>minExtent</code> / <code>maxExtent</code> smaller than the child's text height.</strong> In <code>SliverPersistentHeaderDelegate</code>, your <code>build</code> output is forced into tight height constraints between <code>minExtent</code> and <code>maxExtent</code>. Under <code>200%</code> system text scaling, a hardcoded <code>48.0</code> header with two lines of text will overflow vertically; prefer <code>PinnedHeaderSliver</code> or include <code>MediaQuery.textScalerOf(context)</code> in your extent math.</p>
+<p><strong>Using <code>snap: true</code> without <code>floating: true</code> on <code>SliverAppBar</code>.</strong> <code>SliverAppBar</code> asserts that <code>snap</code> requires <code>floating: true</code> (and a <code>vsync</code> ticker), because snapping animates the floating header open or closed when the user lifts their finger mid-reveal.</p>
+<p>That's pinned, resizing, and floating headers end to end: one <code>layoutExtent</code> vs <code>paintExtent</code> split, wrapped in three zero-boilerplate widgets for everyday layouts and <code>SliverPersistentHeader</code> / <code>SliverAppBar</code> when you need <code>shrinkOffset</code>-driven transitions. Next, we'll step back and see how <code>ListView</code>, <code>GridView</code>, <code>CustomScrollView</code>, and <code>SingleChildScrollView</code> assemble everything we've covered so far.</p>
+</section>
+<a class="next" href="../guides/scroll-views.html"><div><small>Next guide</small><b>Scroll Views</b></div><span>→</span></a><div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#what-this-guide-covers">What This Guide Covers</a></li><li><a href="#one-trick-behind-every-sticky-header">One Trick Behind Every Sticky Header</a></li><li><a href="#the-three-simple-header-widgets">The Three Simple Header Widgets</a></li><li><a href="#sliverpersistentheader-and-sliverappbar">SliverPersistentHeader and SliverAppBar</a></li><li><a href="#stacking-multiple-headers-with-overlap">Stacking Multiple Headers with overlap</a></li><li><a href="#common-pitfalls">Common Pitfalls</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>Flutter Scrolling — How Flutter turns a drag into moving pixels</title>
+<meta name="description" content="Learn how Flutter scrolling really works. Master the handful of pieces that turn a drag into moving pixels.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="assets/search-index.js" defer></script>
+<script src="assets/site.js" defer></script>
+</head>
+<body data-root="">
+<nav class="navbar">
+<button class="navbar-toggle" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="index.html"><img alt="" src="assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a href="guides/index.html">Guides</a></li><li><a href="api/index.html">API</a></li><li><a href="examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="guides/how-scrolling-works.html">Start here</a>
+</nav>
+<section class="hero"><div class="hero-inner">
+<img class="hero-logo" alt="Flutter Scrolling logo" src="assets/images/logo-big.svg">
+<div class="hero-eyebrow">Advanced Flutter</div>
+<h1 class="hero-title">Flutter Scrolling</h1>
+<p class="hero-tagline">Learn how Flutter scrolling really works. Master the handful of pieces that turn a drag into moving pixels.</p>
+<div class="code-panel"><div class="code-panel-header"><i></i><i></i><i></i><span>scroll_view.dart</span></div>
+<pre><span class="t-t">Scrollable</span><span class="t-b0">(</span>                         <span class="t-c">// turns gestures into a ScrollPosition</span>
+  controller<span class="t-p">:</span> controller<span class="t-p">,</span>           <span class="t-c">// lets you read and move the position</span>
+  physics<span class="t-p">:</span> physics<span class="t-p">,</span>                 <span class="t-c">// decides how the position may move</span>
+  viewportBuilder<span class="t-p">:</span> <span class="t-b1">(</span>context<span class="t-p">,</span> offset<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> <span class="t-t">Viewport</span><span class="t-b2">(</span>                <span class="t-c">// the window you look through</span>
+      offset<span class="t-p">:</span> offset<span class="t-p">,</span>               <span class="t-c">// the same ScrollPosition, one number</span>
+      slivers<span class="t-p">:</span> <span class="t-b3">[</span><span class="t-c">/**/</span><span class="t-b3">]</span><span class="t-p">,</span>              <span class="t-c">// the content, laid out on demand</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span><span class="t-p">,</span>
+<span class="t-b0">)</span></pre></div>
+</div></section>
+<div class="stats">
+<div><b>15</b><span>guides</span></div>
+<div><b>15</b><span>api docs</span></div>
+<div><b>3</b><span>examples</span></div>
+<div><b>1</b><span>reading order</span></div>
+</div>
+<div class="section">
+<div class="section-label">The what, why, and how</div>
+<h2 class="section-heading">Scrolling Guides</h2>
+<p class="section-sub">A scroll view looks like one widget. It is four small pieces passing one number around. Learn each piece on its own, in order, with our guides.</p>
+<div class="cards"><a class="card reveal" href="guides/how-scrolling-works.html"><div class="card-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M3 5 L9 5"/><path d="M11 5 L17 5"/><path d="M3 10 L17 10"/><path d="M3 15 L13 15"/><path d="M14 13 L17 15 L14 17"/></svg></div><div class="card-title">How Scrolling Works</div><p class="card-desc">A scroll view looks like one big widget. Under the hood, it is four small classes passing a single pixel offset around.</p><span class="card-link">Read guide →</span></a><a class="card reveal" href="guides/scroll-position.html"><div class="card-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M5 3 L15 3 L15 17 L5 17 Z"/><path d="M8 8 L12 8"/><path d="M8 11 L12 11"/><path d="M10 5.2 L10 5.8"/></svg></div><div class="card-title">Scroll Position</div><p class="card-desc">Understand pixels, minScrollExtent, maxScrollExtent, and why setPixels, correctPixels, and forcePixels exist separately.</p><span class="card-link">Read guide →</span></a><a class="card reveal" href="guides/sliver-layout.html"><div class="card-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M4 4 L16 4"/><path d="M4 8 L16 8"/><path d="M4 12 L16 12"/><path d="M4 16 L11 16"/></svg></div><div class="card-title">Sliver Layout</div><p class="card-desc">BoxConstraints can't ask "what's visible at pixel 400?" Learn the SliverConstraints-in, SliverGeometry-out handshake.</p><span class="card-link">Read guide →</span></a></div>
+<a class="more-link" href="guides/index.html">View all guides →</a>
+</div>
+<div class="band"><div class="section">
+<div class="section-label">Examples</div>
+<h2 class="section-heading">Real Code, Real Scrolling</h2>
+<p class="section-sub">Ground your understanding with small, complete implementations you can drag around, including explanations of every decision.</p>
+<div class="cards"><a class="card reveal" href="examples/snapping-physics.html"><div class="card-art"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" aria-hidden="true"><defs><linearGradient id="art-a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3f74e8"/><stop offset="1" stop-color="#2748a8"/></linearGradient></defs><rect width="300" height="300" fill="url(#art-a)"/><rect x="-40" y="92" width="110" height="116" rx="14" fill="rgba(255,255,255,0.28)" stroke="none" stroke-width="1.0" /><rect x="95" y="92" width="110" height="116" rx="14" fill="#ffffff" stroke="none" stroke-width="1.0" /><rect x="111" y="110" width="78" height="50" rx="8" fill="#3a6fdc" stroke="none" stroke-width="1.0" opacity="0.9"/><rect x="111" y="172" width="60" height="7" rx="3.5" fill="#1a2b52" stroke="none" stroke-width="1.0" /><rect x="111" y="186" width="38" height="7" rx="3.5" fill="#1a2b52" stroke="none" stroke-width="1.0" opacity="0.5"/><rect x="230" y="92" width="110" height="116" rx="14" fill="rgba(255,255,255,0.28)" stroke="none" stroke-width="1.0" /><line x1="15" y1="238" x2="15" y2="250" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/><line x1="150" y1="238" x2="150" y2="250" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="1"/><line x1="285" y1="238" x2="285" y2="250" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/><line x1="150" y1="64" x2="150" y2="82" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" /><path d="M205 54 C 190 40, 168 40, 156 56" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><path d="M156 46 L155 57 L166 56" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="card-title">Snapping Physics</div><p class="card-desc">Custom ScrollPhysics that let any fixed-extent list snap cleanly to item boundaries on drag release or fling.</p><span class="card-link">See example →</span></a><a class="card reveal" href="examples/minimal-viewport.html"><div class="card-art"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" aria-hidden="true"><defs><clipPath id="art-b-clip"><rect x="58" y="94" width="184" height="130" rx="16"/></clipPath><linearGradient id="art-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a4df0"/><stop offset="1" stop-color="#3f2a9c"/></linearGradient></defs><rect width="300" height="300" fill="url(#art-b)"/><rect x="78" y="-30" width="144" height="360" rx="12" fill="rgba(255,255,255,0.16)" stroke="none" stroke-width="1.0" /><rect x="94" y="-14" width="112" height="26" rx="7" fill="rgba(255,255,255,0.30)" stroke="none" stroke-width="1.0" /><rect x="94" y="22" width="112" height="26" rx="7" fill="rgba(255,255,255,0.30)" stroke="none" stroke-width="1.0" /><rect x="94" y="58" width="112" height="26" rx="7" fill="rgba(255,255,255,0.30)" stroke="none" stroke-width="1.0" /><rect x="94" y="242" width="112" height="26" rx="7" fill="rgba(255,255,255,0.30)" stroke="none" stroke-width="1.0" /><rect x="94" y="278" width="112" height="26" rx="7" fill="rgba(255,255,255,0.30)" stroke="none" stroke-width="1.0" /><rect x="56" y="92" width="188" height="134" rx="18" fill="#1b1140" stroke="#ffffff" stroke-width="4" /><g clip-path="url(#art-b-clip)"><rect x="94" y="104" width="112" height="26" rx="7" fill="#ffffff" stroke="none" stroke-width="1.0" /><rect x="94" y="140" width="112" height="26" rx="7" fill="#ffffff" stroke="none" stroke-width="1.0" /><rect x="94" y="176" width="112" height="26" rx="7" fill="#ffffff" stroke="none" stroke-width="1.0" /><rect x="94" y="212" width="112" height="10" rx="5" fill="#ffffff" stroke="none" stroke-width="1.0" /></g><line x1="266" y1="92" x2="266" y2="226" stroke="#fff" stroke-width="2" stroke-linecap="round" /><line x1="260" y1="92" x2="272" y2="92" stroke="#fff" stroke-width="2" stroke-linecap="round" /><line x1="260" y1="226" x2="272" y2="226" stroke="#fff" stroke-width="2" stroke-linecap="round" /></svg></div><div class="card-title">Minimal Viewport</div><p class="card-desc">A complete vertical scroll view built from Scrollable and one 100-line RenderBox — no slivers involved.</p><span class="card-link">See example →</span></a><a class="card reveal" href="examples/sticky-header.html"><div class="card-art"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" aria-hidden="true"><defs><clipPath id="art-c-clip"><rect x="62" y="42" width="176" height="216" rx="16"/></clipPath><linearGradient id="art-c" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12a6ad"/><stop offset="1" stop-color="#0a5f70"/></linearGradient></defs><rect width="300" height="300" fill="url(#art-c)"/><rect x="60" y="40" width="180" height="220" rx="18" fill="#062a2c" stroke="#ffffff" stroke-width="4" /><g clip-path="url(#art-c-clip)"><rect x="76" y="70" width="148" height="30" rx="8" fill="rgba(255,255,255,0.26)" stroke="none" stroke-width="1.0" /><rect x="76" y="108" width="148" height="30" rx="8" fill="rgba(255,255,255,0.26)" stroke="none" stroke-width="1.0" /><rect x="76" y="146" width="148" height="30" rx="8" fill="rgba(255,255,255,0.26)" stroke="none" stroke-width="1.0" /><rect x="76" y="184" width="148" height="30" rx="8" fill="rgba(255,255,255,0.26)" stroke="none" stroke-width="1.0" /><rect x="76" y="222" width="148" height="30" rx="8" fill="rgba(255,255,255,0.26)" stroke="none" stroke-width="1.0" /><rect x="62" y="88" width="176" height="10" fill="#000" opacity="0.22"/><rect x="62" y="42" width="176" height="46" rx="0" fill="#ffffff" stroke="none" stroke-width="1.0" /><rect x="78" y="58" width="84" height="9" rx="4.5" fill="#0b5f63" stroke="none" stroke-width="1.0" /><rect x="78" y="72" width="46" height="6" rx="3" fill="#0b5f63" stroke="none" stroke-width="1.0" opacity="0.5"/><circle cx="214" cy="65" r="9" fill="#0b8f95"/><path d="M214 60 L214 70 M210 64 L214 60 L218 64" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div><div class="card-title">Sticky Header</div><p class="card-desc">A 50-line RenderSliverSingleBoxAdapter that reveals how scrollExtent, paintExtent, and layoutExtent work together.</p><span class="card-link">See example →</span></a></div>
+<a class="more-link" href="examples/index.html">View all examples →</a>
+</div></div>
+<div class="section">
+<div class="section-label">API Reference</div>
+<h2 class="section-heading">Docs for Every Method</h2>
+<p class="section-sub">Get help with the specific scrolling methods you override and call, with our API docs.</p>
+<div class="methods"><a class="method reveal" href="api/apply-boundary-conditions.html"><div class="method-head"><b>applyBoundaryConditions(ScrollMetrics position, double value)</b><span>docs →</span></div><div class="method-body"><p>Decides how much of a proposed scroll offset is refused at the edges. Return 0.0 to let the content move freely.</p><small>double — the overscroll to hand back; 0.0 accepts the whole move</small></div></a><a class="method reveal" href="api/create-ballistic-simulation.html"><div class="method-head"><b>createBallisticSimulation(ScrollMetrics position, double velocity)</b><span>docs →</span></div><div class="method-body"><p>Describes what the position does after the finger lifts: a fling, a spring back, a snap, or nothing at all.</p><small>Simulation? — null means the position goes idle where it is</small></div></a><a class="method reveal" href="api/sliver-perform-layout.html"><div class="method-head"><b>performLayout()</b><span>docs →</span></div><div class="method-body"><p>Reads the SliverConstraints handed down by the viewport and answers with a SliverGeometry. Must set geometry before returning.</p><small>void — called by the viewport once per sliver, per layout attempt</small></div></a></div>
+<a class="more-link" href="api/index.html">View full API reference →</a>
+</div>
+<div class="path-wrap"><div class="section">
+<div class="section-label">Reading order</div>
+<h2 class="section-heading">Learn It in One Sitting</h2>
+<p class="section-sub">Six guides, read in order, cover the whole machine. Everything else on this site is detail you can look up later.</p>
+<div class="path-card">
+<div class="path-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true"><path d="M5 4 L5 16"/><path d="M5 4 L13 4 L11 7 L13 10 L5 10"/></svg></div>
+<div class="path-title">The short path</div>
+<p class="path-desc">Start at the top. Each guide assumes only the ones before it.</p>
+<ol class="path-steps"><li><a href="guides/how-scrolling-works.html">How Scrolling Works</a></li><li><a href="guides/scroll-position.html">Scroll Position</a></li><li><a href="guides/scroll-physics.html">Scroll Physics</a></li><li><a href="guides/scroll-activities.html">Scroll Activities</a></li><li><a href="guides/viewports.html">Viewports</a></li><li><a href="guides/sliver-layout.html">Sliver Layout</a></li></ol>
+<a class="btn" href="guides/how-scrolling-works.html">Start reading</a>
+</div>
+</div>
+<footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="guides/index.html">Guides</a><a href="api/index.html">API</a><a href="examples/index.html">Examples</a></nav>
+</footer>
+</div>
+</body>
+</html>

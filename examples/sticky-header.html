@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>Sticky Header Sliver | Flutter Scrolling</title>
+<meta name="description" content="Custom RenderSliver that scrolls to the leading edge and pins in place.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+<script src="../assets/demos.js" defer></script></head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a href="../guides/index.html">Guides</a></li><li><a href="../api/index.html">API</a></li><li><a class="active" href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>Examples</h3><ul><li><a href="../examples/index.html" title="Overview">Overview</a></li><li><a href="../examples/snapping-physics.html" title="Snapping Physics">Snapping Physics</a></li><li><a href="../examples/minimal-viewport.html" title="Minimal Viewport">Minimal Viewport</a></li><li><a class="active" href="../examples/sticky-header.html" title="Sticky Header">Sticky Header</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>Sticky Header Sliver</h1><p>Custom RenderSliver that scrolls to the leading edge and pins in place.</p></header>
+<section class="content">
+<p>A custom sliver (<code>StickyHeader</code> + <code>RenderStickyHeader</code>) that scrolls upward with normal content until its top edge reaches the top of the viewport, then stays pinned there while the <code>SliverList</code> after it slides smoothly underneath.</p>
+<h2 id="why-write-a-sticky-header-sliver"><span>Why Write a Sticky Header Sliver?</span><a class="anchor" href="#why-write-a-sticky-header-sliver" aria-label="Link to this section">#</a></h2>
+<p>Flutter ships <code>PinnedHeaderSliver</code> out of the box, so in production code you rarely need to write this class yourself. Writing it once is the fastest way to make the sliver protocol click: almost every confusing field on <code>SliverConstraints</code> and <code>SliverGeometry</code> — <code>scrollOffset</code>, <code>overlap</code>, <code>scrollExtent</code>, <code>paintExtent</code>, <code>layoutExtent</code>, and <code>childMainAxisPosition</code> — has one clear, visible job here.</p>
+<h2 id="try-it-out"><span>Try it Out</span><a class="anchor" href="#try-it-out" aria-label="Link to this section">#</a></h2>
+<p>Drag the list or jump to the preset offsets and watch <code>geometry.layoutExtent</code> shrink from <code>44.0</code> down to <code>0.0</code> while <code>geometry.paintExtent</code> stays <code>44.0</code>.</p>
+<div class="demo" data-demo="sticky">
+<div class="demo-stage">
+<div class="demo-view"><canvas width="260" height="250"></canvas></div>
+<div class="demo-side">
+<div class="demo-heading">RenderStickyHeader</div>
+<table class="demo-readout">
+<tr><td>constraints.scrollOffset</td><td data-f="scrollOffset">0.0</td></tr>
+<tr><td>remainingPaintExtent</td><td data-f="remaining">154.0</td></tr>
+<tr><td>geometry.scrollExtent</td><td data-f="scrollExtent">44.0</td></tr>
+<tr><td>geometry.paintExtent</td><td data-f="paintExtent">44.0</td></tr>
+<tr><td>geometry.layoutExtent</td><td class="hot" data-f="layoutExtent">44.0</td></tr>
+</table>
+</div>
+</div>
+<div class="demo-controls">
+<label>Jump</label>
+<button class="demo-btn" type="button" data-jump="0">Top (0px)</button>
+<button class="demo-btn" type="button" data-jump="96">Touch top (96px)</button>
+<button class="demo-btn" type="button" data-jump="118">Halfway (118px)</button>
+<button class="demo-btn" type="button" data-jump="240">Pinned (240px)</button>
+</div>
+<div class="demo-note">Once <code>scrollOffset</code> passes <code>44.0</code>, <code>layoutExtent</code> hits <code>0.0</code> so the list lays out right at the top and slides underneath.</div>
+</div>
+<h2 id="the-implementation"><span>The Implementation</span><a class="anchor" href="#the-implementation" aria-label="Link to this section">#</a></h2>
+<h3 id="extending-rendersliversingleboxadapter"><span>Extending <code>RenderSliverSingleBoxAdapter</code></span><a class="anchor" href="#extending-rendersliversingleboxadapter" aria-label="Link to this section">#</a></h3>
+<p>A sliver cannot host a <code>RenderBox</code> child without a bridge between <code>SliverConstraints</code> and <code>BoxConstraints</code>. Extending <code>RenderSliverSingleBoxAdapter</code> gives you single-child management, painting, hit-testing, and <code>applyPaintTransform</code> for free — leaving just two methods to implement: <code>childMainAxisPosition</code> and <code>performLayout</code>.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">class</span> <span class="t-t">RenderStickyHeader</span> <span class="t-k">extends</span> <span class="t-t">RenderSliverSingleBoxAdapter</span> <span class="t-b0">{</span>
+  <span class="t-t">RenderStickyHeader</span><span class="t-b1">(</span><span class="t-b2">{</span><span class="t-k">super</span><span class="t-p">.</span>child<span class="t-b2">}</span><span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">double</span> <span class="t-m">childMainAxisPosition</span><span class="t-b1">(</span><span class="t-t">RenderBox</span> child<span class="t-b1">)</span> <span class="t-p">=&gt;</span> <span class="t-n">0.0</span><span class="t-p">;</span></code></pre></div>
+<p>In a normal <code>SliverToBoxAdapter</code>, <code>childMainAxisPosition</code> returns <code>-constraints.scrollOffset</code> so the child slides out of view as <code>scrollOffset</code> grows. Returning <code>0.0</code> keeps the child anchored to the sliver's own origin at all times.</p>
+<h3 id="splitting-layoutextent-from-paintextent"><span>Splitting <code>layoutExtent</code> from <code>paintExtent</code></span><a class="anchor" href="#splitting-layoutextent-from-paintextent" aria-label="Link to this section">#</a></h3>
+<p>Before the header reaches the top of the viewport, <code>constraints.scrollOffset</code> is <code>0.0</code>: earlier slivers absorbed the scroll offset, and the viewport placed this sliver right below them. Once the earlier slivers have scrolled completely off-screen, <code>constraints.scrollOffset</code> starts climbing from <code>0.0</code> upward.</p>
+<p>That is the moment <code>layoutExtent</code> and <code>paintExtent</code> diverge:</p>
+<ul><li><code>paintExtent</code> stays equal to <code>childExtent</code> (say <code>56.0</code>), because the header is still drawn in full at the top of the viewport.</li><li><code>layoutExtent</code> shrinks as <code>childExtent - constraints.scrollOffset</code>, clamped to <code>0.0</code>. <code>RenderViewport</code> advances the <em>next</em> sliver's starting position by <code>layoutExtent</code>, not <code>paintExtent</code> — so as <code>layoutExtent</code> shrinks to zero, the <code>SliverList</code> moves up underneath the still-painted header.</li></ul>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">final</span> <span class="t-t">double</span> layoutExtent <span class="t-p">=</span> <span class="t-m">clampDouble</span><span class="t-b0">(</span>
+  childExtent <span class="t-p">-</span> constraints<span class="t-p">.</span>scrollOffset<span class="t-p">,</span>
+  <span class="t-n">0.0</span><span class="t-p">,</span>
+  constraints<span class="t-p">.</span>remainingPaintExtent<span class="t-p">,</span>
+<span class="t-b0">)</span><span class="t-p">;</span>
+
+<span class="t-k">final</span> <span class="t-t">double</span> paintExtent <span class="t-p">=</span> math<span class="t-p">.</span><span class="t-m">min</span><span class="t-b0">(</span>
+  childExtent<span class="t-p">,</span>
+  constraints<span class="t-p">.</span>remainingPaintExtent <span class="t-p">-</span> constraints<span class="t-p">.</span>overlap<span class="t-p">,</span>
+<span class="t-b0">)</span><span class="t-p">;</span></code></pre></div>
+<h3 id="playing-nicely-with-other-slivers"><span>Playing Nicely With Other Slivers</span><a class="anchor" href="#playing-nicely-with-other-slivers" aria-label="Link to this section">#</a></h3>
+<p>Three smaller fields on <code>SliverGeometry</code> make the header cooperate with sibling slivers and <code>Scrollable.ensureVisible</code>:</p>
+<ul><li><code>paintOrigin: constraints.overlap</code> shifts this header <em>after</em> any earlier pinned sliver so two consecutive sticky headers stack cleanly instead of painting on top of one another.</li><li><code>maxScrollObstructionExtent: childExtent</code> tells <code>RenderViewport.getOffsetToReveal</code> that the top <code>56px</code> of the viewport is permanently covered, so <code>ensureVisible</code> scrolls target items <em>below</em> the pinned header rather than hiding them behind it.</li><li><code>hasVisualOverflow: true</code> lets <code>RenderSliverSingleBoxAdapter</code> know the sliver paints past its <code>layoutExtent</code>.</li></ul>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code>geometry <span class="t-p">=</span> <span class="t-t">SliverGeometry</span><span class="t-b0">(</span>
+  scrollExtent<span class="t-p">:</span> childExtent<span class="t-p">,</span>
+  paintOrigin<span class="t-p">:</span> constraints<span class="t-p">.</span>overlap<span class="t-p">,</span>
+  paintExtent<span class="t-p">:</span> paintExtent<span class="t-p">,</span>
+  layoutExtent<span class="t-p">:</span> layoutExtent<span class="t-p">,</span>
+  maxPaintExtent<span class="t-p">:</span> childExtent<span class="t-p">,</span>
+  maxScrollObstructionExtent<span class="t-p">:</span> childExtent<span class="t-p">,</span>
+  cacheExtent<span class="t-p">:</span> <span class="t-m">calculateCacheOffset</span><span class="t-b1">(</span>
+    constraints<span class="t-p">,</span>
+    from<span class="t-p">:</span> <span class="t-n">0.0</span><span class="t-p">,</span>
+    to<span class="t-p">:</span> childExtent<span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">,</span>
+  hasVisualOverflow<span class="t-p">:</span> <span class="t-k">true</span><span class="t-p">,</span>
+<span class="t-b0">)</span><span class="t-p">;</span></code></pre></div>
+<h2 id="full-source-code"><span>Full Source Code</span><a class="anchor" href="#full-source-code" aria-label="Link to this section">#</a></h2>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">import</span> <span class="t-s">'dart:math'</span> <span class="t-k">as</span> math<span class="t-p">;</span>
+
+<span class="t-k">import</span> <span class="t-s">'package:flutter/foundation.dart'</span><span class="t-p">;</span>
+<span class="t-k">import</span> <span class="t-s">'package:flutter/rendering.dart'</span><span class="t-p">;</span>
+<span class="t-k">import</span> <span class="t-s">'package:flutter/widgets.dart'</span><span class="t-p">;</span>
+
+<span class="t-c">/// A sliver that scrolls with the content until it reaches the leading edge</span>
+<span class="t-c">/// of the viewport, and then stays there.</span>
+<span class="t-c">///</span>
+<span class="t-c">/// The framework ships the same behavior as [PinnedHeaderSliver]. This one is</span>
+<span class="t-c">/// written out in full so every line of the sliver protocol is visible.</span>
+<span class="t-k">class</span> <span class="t-t">StickyHeader</span> <span class="t-k">extends</span> <span class="t-t">SingleChildRenderObjectWidget</span> <span class="t-b0">{</span>
+  <span class="t-k">const</span> <span class="t-t">StickyHeader</span><span class="t-b1">(</span><span class="t-b2">{</span><span class="t-k">super</span><span class="t-p">.</span>key<span class="t-p">,</span> <span class="t-k">super</span><span class="t-p">.</span>child<span class="t-b2">}</span><span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">RenderStickyHeader</span> <span class="t-m">createRenderObject</span><span class="t-b1">(</span><span class="t-t">BuildContext</span> context<span class="t-b1">)</span> <span class="t-p">=&gt;</span>
+      <span class="t-t">RenderStickyHeader</span><span class="t-b1">(</span><span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span>
+
+<span class="t-k">class</span> <span class="t-t">RenderStickyHeader</span> <span class="t-k">extends</span> <span class="t-t">RenderSliverSingleBoxAdapter</span> <span class="t-b0">{</span>
+  <span class="t-t">RenderStickyHeader</span><span class="t-b1">(</span><span class="t-b2">{</span><span class="t-k">super</span><span class="t-p">.</span>child<span class="t-b2">}</span><span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-t">double</span> <span class="t-k">get</span> _childExtent <span class="t-b1">{</span>
+    <span class="t-k">final</span> <span class="t-t">RenderBox</span><span class="t-p">?</span> child <span class="t-p">=</span> <span class="t-k">this</span><span class="t-p">.</span>child<span class="t-p">;</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>child <span class="t-p">==</span> <span class="t-k">null</span><span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-f">return</span> <span class="t-n">0.0</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-f">return</span> <span class="t-f">switch</span> <span class="t-b2">(</span>constraints<span class="t-p">.</span>axis<span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-t">Axis</span><span class="t-p">.</span>vertical <span class="t-p">=&gt;</span> child<span class="t-p">.</span>size<span class="t-p">.</span>height<span class="t-p">,</span>
+      <span class="t-t">Axis</span><span class="t-p">.</span>horizontal <span class="t-p">=&gt;</span> child<span class="t-p">.</span>size<span class="t-p">.</span>width<span class="t-p">,</span>
+    <span class="t-b2">}</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-c">// The child is always drawn at the sliver's own origin. It never slides</span>
+  <span class="t-c">// out from under the sliver the way a normal scrolling child does.</span>
+  <span class="t-k">@override</span>
+  <span class="t-t">double</span> <span class="t-m">childMainAxisPosition</span><span class="t-b1">(</span><span class="t-t">RenderBox</span> child<span class="t-b1">)</span> <span class="t-p">=&gt;</span> <span class="t-n">0.0</span><span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-k">void</span> <span class="t-m">performLayout</span><span class="t-b1">(</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-k">final</span> <span class="t-t">SliverConstraints</span> constraints <span class="t-p">=</span> <span class="t-k">this</span><span class="t-p">.</span>constraints<span class="t-p">;</span>
+    child<span class="t-p">?.</span><span class="t-m">layout</span><span class="t-b2">(</span>constraints<span class="t-p">.</span><span class="t-m">asBoxConstraints</span><span class="t-b3">(</span><span class="t-b3">)</span><span class="t-p">,</span> parentUsesSize<span class="t-p">:</span> <span class="t-k">true</span><span class="t-b2">)</span><span class="t-p">;</span>
+    <span class="t-k">final</span> <span class="t-t">double</span> childExtent <span class="t-p">=</span> _childExtent<span class="t-p">;</span>
+
+    <span class="t-c">// How much room the header still takes from the slivers after it. Once</span>
+    <span class="t-c">// it has scrolled a full header's height, it takes none: the next sliver</span>
+    <span class="t-c">// lays out as if the header were gone, and slides underneath it.</span>
+    <span class="t-k">final</span> <span class="t-t">double</span> layoutExtent <span class="t-p">=</span> <span class="t-m">clampDouble</span><span class="t-b2">(</span>
+      childExtent <span class="t-p">-</span> constraints<span class="t-p">.</span>scrollOffset<span class="t-p">,</span>
+      <span class="t-n">0.0</span><span class="t-p">,</span>
+      constraints<span class="t-p">.</span>remainingPaintExtent<span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+
+    <span class="t-c">// How much the header draws: all of itself, if the viewport has room.</span>
+    <span class="t-k">final</span> <span class="t-t">double</span> paintExtent <span class="t-p">=</span> math<span class="t-p">.</span><span class="t-m">min</span><span class="t-b2">(</span>
+      childExtent<span class="t-p">,</span>
+      constraints<span class="t-p">.</span>remainingPaintExtent <span class="t-p">-</span> constraints<span class="t-p">.</span>overlap<span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+
+    geometry <span class="t-p">=</span> <span class="t-t">SliverGeometry</span><span class="t-b2">(</span>
+      <span class="t-c">// The header is one header tall in the scrollable content.</span>
+      scrollExtent<span class="t-p">:</span> childExtent<span class="t-p">,</span>
+      <span class="t-c">// Start drawing after any earlier pinned sliver, not underneath it.</span>
+      paintOrigin<span class="t-p">:</span> constraints<span class="t-p">.</span>overlap<span class="t-p">,</span>
+      paintExtent<span class="t-p">:</span> paintExtent<span class="t-p">,</span>
+      layoutExtent<span class="t-p">:</span> layoutExtent<span class="t-p">,</span>
+      maxPaintExtent<span class="t-p">:</span> childExtent<span class="t-p">,</span>
+      <span class="t-c">// Tells reveal logic that this much of the viewport stays covered.</span>
+      maxScrollObstructionExtent<span class="t-p">:</span> childExtent<span class="t-p">,</span>
+      cacheExtent<span class="t-p">:</span> <span class="t-m">calculateCacheOffset</span><span class="t-b3">(</span>
+        constraints<span class="t-p">,</span>
+        from<span class="t-p">:</span> <span class="t-n">0.0</span><span class="t-p">,</span>
+        to<span class="t-p">:</span> childExtent<span class="t-p">,</span>
+      <span class="t-b3">)</span><span class="t-p">,</span>
+      <span class="t-c">// The header can paint past its layout extent, over the next sliver.</span>
+      hasVisualOverflow<span class="t-p">:</span> <span class="t-k">true</span><span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+<span class="t-b0">}</span>
+
+<span class="t-c">/// A scroll view with a title that scrolls away, a header that sticks, and a</span>
+<span class="t-c">/// long list.</span>
+<span class="t-k">class</span> <span class="t-t">StickyHeaderDemo</span> <span class="t-k">extends</span> <span class="t-t">StatelessWidget</span> <span class="t-b0">{</span>
+  <span class="t-k">const</span> <span class="t-t">StickyHeaderDemo</span><span class="t-b1">(</span><span class="t-b2">{</span><span class="t-k">super</span><span class="t-p">.</span>key<span class="t-p">,</span> <span class="t-k">this</span><span class="t-p">.</span>controller<span class="t-b2">}</span><span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-k">final</span> <span class="t-t">ScrollController</span><span class="t-p">?</span> controller<span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">Widget</span> <span class="t-m">build</span><span class="t-b1">(</span><span class="t-t">BuildContext</span> context<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> <span class="t-t">CustomScrollView</span><span class="t-b2">(</span>
+      controller<span class="t-p">:</span> controller<span class="t-p">,</span>
+      slivers<span class="t-p">:</span> <span class="t-p">&lt;</span><span class="t-t">Widget</span><span class="t-p">&gt;</span><span class="t-b3">[</span>
+        <span class="t-k">const</span> <span class="t-t">SliverToBoxAdapter</span><span class="t-b4">(</span>
+          child<span class="t-p">:</span> <span class="t-t">SizedBox</span><span class="t-b5">(</span>
+            height<span class="t-p">:</span> <span class="t-n">120.0</span><span class="t-p">,</span>
+            child<span class="t-p">:</span> <span class="t-t">Center</span><span class="t-b0">(</span>
+              child<span class="t-p">:</span> <span class="t-t">Text</span><span class="t-b1">(</span><span class="t-s">'Scrolls away'</span><span class="t-p">,</span> style<span class="t-p">:</span> <span class="t-t">TextStyle</span><span class="t-b2">(</span>fontSize<span class="t-p">:</span> <span class="t-n">24.0</span><span class="t-b2">)</span><span class="t-b1">)</span><span class="t-p">,</span>
+            <span class="t-b0">)</span><span class="t-p">,</span>
+          <span class="t-b5">)</span><span class="t-p">,</span>
+        <span class="t-b4">)</span><span class="t-p">,</span>
+        <span class="t-k">const</span> <span class="t-t">StickyHeader</span><span class="t-b4">(</span>
+          child<span class="t-p">:</span> <span class="t-t">ColoredBox</span><span class="t-b5">(</span>
+            color<span class="t-p">:</span> <span class="t-t">Color</span><span class="t-b0">(</span><span class="t-n">0xFF12A6AD</span><span class="t-b0">)</span><span class="t-p">,</span>
+            child<span class="t-p">:</span> <span class="t-t">SizedBox</span><span class="t-b0">(</span>
+              height<span class="t-p">:</span> <span class="t-n">56.0</span><span class="t-p">,</span>
+              child<span class="t-p">:</span> <span class="t-t">Center</span><span class="t-b1">(</span>
+                child<span class="t-p">:</span> <span class="t-t">Text</span><span class="t-b2">(</span>
+                  <span class="t-s">'Sticks'</span><span class="t-p">,</span>
+                  style<span class="t-p">:</span> <span class="t-t">TextStyle</span><span class="t-b3">(</span>color<span class="t-p">:</span> <span class="t-t">Color</span><span class="t-b4">(</span><span class="t-n">0xFFFFFFFF</span><span class="t-b4">)</span><span class="t-p">,</span> fontSize<span class="t-p">:</span> <span class="t-n">18.0</span><span class="t-b3">)</span><span class="t-p">,</span>
+                <span class="t-b2">)</span><span class="t-p">,</span>
+              <span class="t-b1">)</span><span class="t-p">,</span>
+            <span class="t-b0">)</span><span class="t-p">,</span>
+          <span class="t-b5">)</span><span class="t-p">,</span>
+        <span class="t-b4">)</span><span class="t-p">,</span>
+        <span class="t-t">SliverList</span><span class="t-p">.</span><span class="t-m">builder</span><span class="t-b4">(</span>
+          itemCount<span class="t-p">:</span> <span class="t-n">40</span><span class="t-p">,</span>
+          itemBuilder<span class="t-p">:</span> <span class="t-b5">(</span><span class="t-t">BuildContext</span> context<span class="t-p">,</span> <span class="t-t">int</span> index<span class="t-b5">)</span> <span class="t-b5">{</span>
+            <span class="t-f">return</span> <span class="t-t">SizedBox</span><span class="t-b0">(</span>
+              height<span class="t-p">:</span> <span class="t-n">48.0</span><span class="t-p">,</span>
+              child<span class="t-p">:</span> <span class="t-t">Center</span><span class="t-b1">(</span>child<span class="t-p">:</span> <span class="t-t">Text</span><span class="t-b2">(</span><span class="t-s">'Row $index'</span><span class="t-b2">)</span><span class="t-b1">)</span><span class="t-p">,</span>
+            <span class="t-b0">)</span><span class="t-p">;</span>
+          <span class="t-b5">}</span><span class="t-p">,</span>
+        <span class="t-b4">)</span><span class="t-p">,</span>
+      <span class="t-b3">]</span><span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="similar-implementations"><span>Similar Implementations</span><a class="anchor" href="#similar-implementations" aria-label="Link to this section">#</a></h2>
+<ul><li><code>_RenderPinnedHeaderSliver</code> in <code>package:flutter/src/widgets/pinned_header_sliver.dart</code> is the framework's production version of this exact sliver, adding semantics scrolling exclusion and explicit clip handling.</li><li><code>RenderSliverPinnedPersistentHeader</code> in <code>package:flutter/src/rendering/sliver_persistent_header.dart</code> adds shrinking between <code>maxExtent</code> and <code>minExtent</code> on top of the same <code>layoutExtent</code> vs <code>paintExtent</code> split.</li></ul>
+</section>
+<div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#why-write-a-sticky-header-sliver">Why Write a Sticky Header Sliver?</a></li><li><a href="#try-it-out">Try it Out</a></li><li><a href="#the-implementation">The Implementation</a></li><li class="sub"><a href="#extending-rendersliversingleboxadapter">Extending RenderSliverSingleBoxAdapter</a></li><li class="sub"><a href="#splitting-layoutextent-from-paintextent">Splitting layoutExtent from paintExtent</a></li><li class="sub"><a href="#playing-nicely-with-other-slivers">Playing Nicely With Other Slivers</a></li><li><a href="#full-source-code">Full Source Code</a></li><li><a href="#similar-implementations">Similar Implementations</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>

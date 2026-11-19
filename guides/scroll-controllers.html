@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>Scroll Controllers | Flutter Scrolling</title>
+<meta name="description" content="How ScrollController creates, observes, and commands a ScrollPosition — and what PrimaryScrollController does when you omit one.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+</head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a class="active" href="../guides/index.html">Guides</a></li><li><a href="../api/index.html">API</a></li><li><a href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>Guides</h3><ul><li><a href="../guides/index.html" title="Overview">Overview</a></li><li><a href="../guides/how-scrolling-works.html" title="How Scrolling Works">How Scrolling Works</a></li><li><a href="../guides/scroll-position.html" title="Scroll Position">Scroll Position</a></li><li><a href="../guides/scroll-physics.html" title="Scroll Physics">Scroll Physics</a></li><li><a href="../guides/scroll-activities.html" title="Scroll Activities">Scroll Activities</a></li><li><a class="active" href="../guides/scroll-controllers.html" title="Scroll Controllers">Scroll Controllers</a></li><li><a href="../guides/scroll-notifications.html" title="Scroll Notifications">Scroll Notifications</a></li><li><a href="../guides/scroll-behavior.html" title="Scroll Behavior">Scroll Behavior</a></li></ul></div><div class="sidebar-group"><h3>Slivers</h3><ul><li><a href="../guides/viewports.html" title="Viewports">Viewports</a></li><li><a href="../guides/sliver-layout.html" title="Sliver Layout">Sliver Layout</a></li><li><a href="../guides/lazy-children.html" title="Lazy Children">Lazy Children</a></li><li><a href="../guides/pinned-headers.html" title="Pinned Headers">Pinned Headers</a></li><li><a href="../guides/scroll-views.html" title="Scroll Views">Scroll Views</a></li></ul></div><div class="sidebar-group"><h3>Going Further</h3><ul><li><a href="../guides/revealing-content.html" title="Revealing Content">Revealing Content</a></li><li><a href="../guides/nested-scrolling.html" title="Nested Scrolling">Nested Scrolling</a></li><li><a href="../guides/two-dimensional-scrolling.html" title="2D Scrolling">2D Scrolling</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>Scroll Controllers</h1><p>How ScrollController creates, observes, and commands a ScrollPosition — and what PrimaryScrollController does when you omit one.</p></header>
+<section class="content">
+<p>This guide walks experienced Flutter developers through <code>ScrollController</code>, <code>PageController</code>, and <code>PrimaryScrollController</code>. By the end, you'll understand what a controller actually owns, how <code>attach</code> and <code>detach</code> work when widgets rebuild, and when Flutter automatically shares an inherited <code>PrimaryScrollController</code>. We'll skip <code>ScrollNotification</code> bubbling and sliver internals — this is about the handle you hold in widget state, and only that handle.</p>
+<h2 id="what-this-guide-covers"><span>What This Guide Covers</span><a class="anchor" href="#what-this-guide-covers" aria-label="Link to this section">#</a></h2>
+<ul><li><strong>A Remote Control, Not the Position</strong> — Why <code>ScrollController</code> delegates almost everything to its attached <code>ScrollPosition</code>s.</li><li><strong>Lifecycle: <code>createScrollPosition</code>, <code>attach</code>, and <code>detach</code></strong> — What happens when a <code>Scrollable</code> mounts, updates, and unmounts.</li><li><strong>Reading and Moving the Offset</strong> — <code>offset</code>, <code>hasClients</code>, <code>jumpTo</code>, <code>animateTo</code>, and listening for changes.</li><li><strong>How <code>PrimaryScrollController</code> Works</strong> — Platform-specific auto-inheritance, status-bar tap-to-top on iOS, and avoiding multi-attachment crashes.</li><li><strong>Page Storage and <code>keepScrollOffset</code></strong> — How scroll offsets survive tab switches and route pops.</li><li><strong>Common Pitfalls</strong> — Sharing one controller across two <code>ListView</code>s, forgetting <code>dispose</code>, and reading <code>offset</code> when unattached.</li></ul>
+<h2 id="a-remote-control-not-the-position"><span>A Remote Control, Not the Position</span><a class="anchor" href="#a-remote-control-not-the-position" aria-label="Link to this section">#</a></h2>
+<p><code>ScrollController</code> does not store <code>pixels</code> itself — it holds a list of zero or more attached <code>ScrollPosition</code> objects (<code>positions</code>) and forwards your reads and commands to them.</p>
+<p>Even when you omit <code>controller:</code> on a <code>ListView</code>, there is still a <code>ScrollController</code> at work: <code>ScrollableState</code> creates a private fallback <code>ScrollController</code> internally so every <code>Scrollable</code> follows the exact same code path.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">class</span> <span class="t-t">_FeedState</span> <span class="t-k">extends</span> <span class="t-t">State</span><span class="t-p">&lt;</span><span class="t-t">Feed</span><span class="t-p">&gt;</span> <span class="t-b0">{</span>
+  <span class="t-k">final</span> <span class="t-t">ScrollController</span> _controller <span class="t-p">=</span> <span class="t-t">ScrollController</span><span class="t-b1">(</span>
+    initialScrollOffset<span class="t-p">:</span> <span class="t-n">120.0</span><span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-k">void</span> <span class="t-m">dispose</span><span class="t-b1">(</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    _controller<span class="t-p">.</span><span class="t-m">dispose</span><span class="t-b2">(</span><span class="t-b2">)</span><span class="t-p">;</span> <span class="t-c">// always dispose controllers you construct</span>
+    <span class="t-k">super</span><span class="t-p">.</span><span class="t-m">dispose</span><span class="t-b2">(</span><span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="lifecycle-createscrollposition-attach-and-detach"><span>Lifecycle: <code>createScrollPosition</code>, <code>attach</code>, and <code>detach</code></span><a class="anchor" href="#lifecycle-createscrollposition-attach-and-detach" aria-label="Link to this section">#</a></h2>
+<p>When <code>ScrollableState</code> mounts (or swaps controllers in <code>didUpdateWidget</code>), it runs a three-step handshake with the effective <code>ScrollController</code>:</p>
+<ol><li>Calls <code>controller.createScrollPosition(physics, context, oldPosition)</code> to build the <code>ScrollPosition</code> (passing the previous <code>ScrollPosition</code> during rebuilds so the current <code>pixels</code> value carries over).</li><li>Calls <code>controller.attach(position)</code>, which adds <code>position</code> to <code>controller.positions</code> and subscribes <code>notifyListeners</code> to the position.</li><li>On unmount or controller swap, calls <code>controller.detach(position)</code> before disposing the position.</li></ol>
+<p>Subclasses of <code>ScrollController</code> exist primarily to customize step 1. <code>PageController</code>, for example, overrides <code>createScrollPosition</code> to return a <code>_PagePosition</code> that speaks in <code>page</code> indices alongside raw <code>pixels</code>.</p>
+<h2 id="reading-and-moving-the-offset"><span>Reading and Moving the Offset</span><a class="anchor" href="#reading-and-moving-the-offset" aria-label="Link to this section">#</a></h2>
+<p>Once a <code>Scrollable</code> is mounted, <code>controller.hasClients</code> becomes <code>true</code>:</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-f">if</span> <span class="t-b0">(</span>_controller<span class="t-p">.</span>hasClients<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-k">final</span> <span class="t-t">double</span> current <span class="t-p">=</span> _controller<span class="t-p">.</span>offset<span class="t-p">;</span> <span class="t-c">// shorthand for position.pixels</span>
+  <span class="t-k">await</span> _controller<span class="t-p">.</span><span class="t-m">animateTo</span><span class="t-b1">(</span>
+    <span class="t-n">0.0</span><span class="t-p">,</span>
+    duration<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">Duration</span><span class="t-b2">(</span>milliseconds<span class="t-p">:</span> <span class="t-n">300</span><span class="t-b2">)</span><span class="t-p">,</span>
+    curve<span class="t-p">:</span> <span class="t-t">Curves</span><span class="t-p">.</span>easeOutCubic<span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<p><strong><code>controller.position</code> and <code>controller.offset</code> assert that <em>exactly one</em> <code>ScrollPosition</code> is attached.</strong> If zero scrollables are attached — or if two <code>ListView</code>s accidentally share the same controller — reading <code>.position</code> or <code>.offset</code> throws immediately. By contrast, <code>jumpTo</code> and <code>animateTo</code> loop over every entry in <code> List.of(_positions)</code>, broadcasting the move to all attached positions.</p>
+<p>When you subscribe with <code>controller.addListener(...)</code>, your callback fires whenever <code>pixels</code> changes — <strong>not</strong> when <code>maxScrollExtent</code> changes without moving <code>pixels</code>. If you need to react to content-size changes too, listen for <code>ScrollMetricsNotification</code> instead (covered in <a href="../guides/scroll-notifications.html">Scroll Notifications</a>).</p>
+<h2 id="how-primaryscrollcontroller-works"><span>How <code>PrimaryScrollController</code> Works</span><a class="anchor" href="#how-primaryscrollcontroller-works" aria-label="Link to this section">#</a></h2>
+<p><code>PrimaryScrollController</code> is an <code>InheritedWidget</code> placed near the top of <code>Scaffold</code> / <code>CupertinoPageScaffold</code> so ancestor chrome can find the screen's main vertical scroll view without manual plumbing. On iOS, tapping the system status bar animates the <code>PrimaryScrollController</code> back to <code>0.0</code>; on desktop, keyboard shortcuts (<code>Page Up</code>, <code>Page Down</code>, <code>Space</code>) can target the primary scrollable.</p>
+<p>A <code>ScrollView</code> (<code>ListView</code>, <code>GridView</code>, <code>CustomScrollView</code>) automatically adopts <code>PrimaryScrollController.maybeOf(context)</code> only when <strong>all</strong> of these hold:</p>
+<ul><li>You left both <code>controller: null</code> and <code>primary: null</code> (or explicitly passed <code>primary: true</code>).</li><li><code>scrollDirection</code> is <code>Axis.vertical</code>.</li><li><code>PrimaryScrollController.shouldInherit(context, scrollDirection)</code> returns <code>true</code> — which by default only happens on mobile platforms (<code>TargetPlatform.iOS</code>, <code>android</code>, <code>fuchsia</code>).</li></ul>
+<p>Once a <code>ScrollView</code> claims the primary controller, it wraps its subtree in <code>PrimaryScrollController.none</code> so nested vertical lists inside it don't collide on the same controller.</p>
+<h2 id="page-storage-and-keepscrolloffset"><span>Page Storage and <code>keepScrollOffset</code></span><a class="anchor" href="#page-storage-and-keepscrolloffset" aria-label="Link to this section">#</a></h2>
+<p>By default, <code>ScrollController.keepScrollOffset</code> is <code>true</code>. Whenever an activity settles (and during scroll updates), <code>ScrollPosition</code> writes <code>pixels</code> into the nearest <code>PageStorage</code> bucket keyed by the <code>Scrollable</code>'s <code>PageStorageKey</code>.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">ListView</span><span class="t-p">.</span><span class="t-m">builder</span><span class="t-b0">(</span>
+  key<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">PageStorageKey</span><span class="t-p">&lt;</span><span class="t-t">String</span><span class="t-p">&gt;</span><span class="t-b1">(</span><span class="t-s">'home-feed'</span><span class="t-b1">)</span><span class="t-p">,</span>
+  itemCount<span class="t-p">:</span> items<span class="t-p">.</span>length<span class="t-p">,</span>
+  itemBuilder<span class="t-p">:</span> itemBuilder<span class="t-p">,</span>
+<span class="t-b0">)</span></code></pre></div>
+<p>Giving two tabs distinct <code>PageStorageKey</code>s lets <code>TabBarView</code> unmount an off-screen tab and restore its exact scroll offset when the user swipes back — even without keeping a <code>ScrollController</code> alive in parent state.</p>
+<h2 id="common-pitfalls"><span>Common Pitfalls</span><a class="anchor" href="#common-pitfalls" aria-label="Link to this section">#</a></h2>
+<p><strong>Two sibling <code>ListView</code>s accidentally sharing <code>PrimaryScrollController</code>.</strong> If you put two vertical <code>ListView</code>s side by side on iOS (for example in a tablet split-view) with neither <code>controller:</code> nor <code>primary: false</code>, both try to attach to the scaffold's single <code>PrimaryScrollController</code>, throwing <code>"ScrollController attached to multiple scroll views"</code>. Pass <code>primary: false</code> (or explicit controllers) to secondary lists.</p>
+<p><strong>Forgetting <code>dispose()</code> on a <code>ScrollController</code>.</strong> A <code>ScrollController</code> is a <code>ChangeNotifier</code>. Leaving it undisposed leaks listener closures and triggers memory-leak tracker failures in <code>flutter_test</code>.</p>
+<p><strong>Calling <code>jumpTo</code> before <code>hasClients</code> is true.</strong> If a <code>ListView</code> sits behind a loading spinner and hasn't mounted yet, <code>_controller.jumpTo(0)</code> does nothing (its <code>_positions</code> list is empty), while <code>_controller.offset</code> throws. Always guard with <code>if (_controller.hasClients)</code>.</p>
+<p>That's <code>ScrollController</code> end to end: a lightweight handle that creates, attaches to, and drives <code>ScrollPosition</code>s while <code>PrimaryScrollController</code> wires the main vertical list to platform chrome. Next, we'll look at how scrolling events travel <em>up</em> the widget tree via <code>ScrollNotification</code>.</p>
+</section>
+<a class="next" href="../guides/scroll-notifications.html"><div><small>Next guide</small><b>Scroll Notifications</b></div><span>→</span></a><div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#what-this-guide-covers">What This Guide Covers</a></li><li><a href="#a-remote-control-not-the-position">A Remote Control, Not the Position</a></li><li><a href="#lifecycle-createscrollposition-attach-and-detach">Lifecycle: createScrollPosition, attach, and detach</a></li><li><a href="#reading-and-moving-the-offset">Reading and Moving the Offset</a></li><li><a href="#how-primaryscrollcontroller-works">How PrimaryScrollController Works</a></li><li><a href="#page-storage-and-keepscrolloffset">Page Storage and keepScrollOffset</a></li><li><a href="#common-pitfalls">Common Pitfalls</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>

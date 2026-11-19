@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>applyBoundaryConditions() | Flutter Scrolling</title>
+<meta name="description" content="Implement applyBoundaryConditions() in a custom ScrollPhysics to clamp or allow overscroll at edges.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+</head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a href="../guides/index.html">Guides</a></li><li><a class="active" href="../api/index.html">API</a></li><li><a href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>API</h3><ul><li><a href="../api/index.html" title="Overview">Overview</a></li></ul></div><div class="sidebar-group"><h3>Scroll Physics</h3><ul><li><a href="../api/apply-to.html" title="applyTo()">applyTo()</a></li><li><a href="../api/apply-physics-to-user-offset.html" title="applyPhysicsToUserOffset()">applyPhysicsToUserOffset()</a></li><li><a class="active" href="../api/apply-boundary-conditions.html" title="applyBoundaryConditions()">applyBoundaryConditions()</a></li><li><a href="../api/create-ballistic-simulation.html" title="createBallisticSimulation()">createBallisticSimulation()</a></li></ul></div><div class="sidebar-group"><h3>Position and Controller</h3><ul><li><a href="../api/jump-to.html" title="jumpTo()">jumpTo()</a></li><li><a href="../api/animate-to.html" title="animateTo()">animateTo()</a></li><li><a href="../api/ensure-visible.html" title="ensureVisible()">ensureVisible()</a></li><li><a href="../api/create-scroll-position.html" title="createScrollPosition()">createScrollPosition()</a></li><li><a href="../api/scroll-metrics.html" title="ScrollMetrics">ScrollMetrics</a></li></ul></div><div class="sidebar-group"><h3>Notifications</h3><ul><li><a href="../api/on-notification.html" title="onNotification">onNotification</a></li></ul></div><div class="sidebar-group"><h3>Slivers</h3><ul><li><a href="../api/sliver-constraints.html" title="SliverConstraints">SliverConstraints</a></li><li><a href="../api/sliver-geometry.html" title="SliverGeometry">SliverGeometry</a></li><li><a href="../api/sliver-perform-layout.html" title="performLayout()">performLayout()</a></li><li><a href="../api/child-main-axis-position.html" title="childMainAxisPosition()">childMainAxisPosition()</a></li></ul></div><div class="sidebar-group"><h3>Scroll Behavior</h3><ul><li><a href="../api/get-scroll-physics.html" title="getScrollPhysics()">getScrollPhysics()</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>applyBoundaryConditions()</h1><p>Implement applyBoundaryConditions() in a custom ScrollPhysics to clamp or allow overscroll at edges.</p></header>
+<section class="content">
+<p>The <code>applyBoundaryConditions(ScrollMetrics position, double value)</code> method inspects a proposed new <code>pixels</code> offset (<code>value</code>) and returns the <strong>overscroll</strong> — the portion of <code>value - position.pixels</code> that is refused.</p>
+<ul><li><code>ScrollPosition.setPixels</code> computes <code>actualPixels = value - overscroll</code>.</li><li>Returning <code>0.0</code> accepts the entire move; any non-zero return must have the same sign as <code>value - position.pixels</code> and magnitude at most <code>(value - position.pixels).abs()</code>.</li></ul>
+<h2 id="default-implementation"><span>Default Implementation</span><a class="anchor" href="#default-implementation" aria-label="Link to this section">#</a></h2>
+<p>Delegates to <code>parent</code> if present, or returns <code>0.0</code> (no boundaries enforced):</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">double</span> <span class="t-m">applyBoundaryConditions</span><span class="t-b0">(</span><span class="t-t">ScrollMetrics</span> position<span class="t-p">,</span> <span class="t-t">double</span> value<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>parent <span class="t-p">==</span> <span class="t-k">null</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> <span class="t-n">0.0</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-f">return</span> parent<span class="t-p">!.</span><span class="t-m">applyBoundaryConditions</span><span class="t-b1">(</span>position<span class="t-p">,</span> value<span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="allow-free-overscroll-ios-bounce-style"><span>Allow Free Overscroll (iOS Bounce Style)</span><a class="anchor" href="#allow-free-overscroll-ios-bounce-style" aria-label="Link to this section">#</a></h2>
+<p>Example where <code>pixels</code> is allowed to move freely past both <code>minScrollExtent</code> and <code>maxScrollExtent</code> so a spring simulation can pull it back later.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">@override</span>
+<span class="t-t">double</span> <span class="t-m">applyBoundaryConditions</span><span class="t-b0">(</span><span class="t-t">ScrollMetrics</span> position<span class="t-p">,</span> <span class="t-t">double</span> value<span class="t-b0">)</span> <span class="t-p">=&gt;</span> <span class="t-n">0.0</span><span class="t-p">;</span></code></pre></div>
+<h2 id="hard-clamp-at-top-bounce-at-bottom"><span>Hard Clamp at Top, Bounce at Bottom</span><a class="anchor" href="#hard-clamp-at-top-bounce-at-bottom" aria-label="Link to this section">#</a></h2>
+<p>Example that refuses any movement below <code>minScrollExtent</code> (<code>0.0</code>) at the top edge while delegating bottom-edge behavior to <code>BouncingScrollPhysics</code>.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">@override</span>
+<span class="t-t">double</span> <span class="t-m">applyBoundaryConditions</span><span class="t-b0">(</span><span class="t-t">ScrollMetrics</span> position<span class="t-p">,</span> <span class="t-t">double</span> value<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-c">// Already at or past the top edge, moving further out:</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>value <span class="t-p">&lt;</span> position<span class="t-p">.</span>pixels <span class="t-p">&amp;&amp;</span> position<span class="t-p">.</span>pixels <span class="t-p">&lt;=</span> position<span class="t-p">.</span>minScrollExtent<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> value <span class="t-p">-</span> position<span class="t-p">.</span>pixels<span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-c">// Crossing minScrollExtent on this frame:</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>value <span class="t-p">&lt;</span> position<span class="t-p">.</span>minScrollExtent <span class="t-p">&amp;&amp;</span> position<span class="t-p">.</span>minScrollExtent <span class="t-p">&lt;</span> position<span class="t-p">.</span>pixels<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> value <span class="t-p">-</span> position<span class="t-p">.</span>minScrollExtent<span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-f">return</span> <span class="t-k">super</span><span class="t-p">.</span><span class="t-m">applyBoundaryConditions</span><span class="t-b1">(</span>position<span class="t-p">,</span> value<span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="cap-maximum-overscroll-distance"><span>Cap Maximum Overscroll Distance</span><a class="anchor" href="#cap-maximum-overscroll-distance" aria-label="Link to this section">#</a></h2>
+<p>Example that allows bouncing past the edges, up to a hard <code>80.0</code>-pixel ceiling in either direction.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">static</span> <span class="t-k">const</span> <span class="t-t">double</span> _maxOverscroll <span class="t-p">=</span> <span class="t-n">80.0</span><span class="t-p">;</span>
+
+<span class="t-k">@override</span>
+<span class="t-t">double</span> <span class="t-m">applyBoundaryConditions</span><span class="t-b0">(</span><span class="t-t">ScrollMetrics</span> position<span class="t-p">,</span> <span class="t-t">double</span> value<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-k">final</span> <span class="t-t">double</span> minAllowed <span class="t-p">=</span> position<span class="t-p">.</span>minScrollExtent <span class="t-p">-</span> _maxOverscroll<span class="t-p">;</span>
+  <span class="t-k">final</span> <span class="t-t">double</span> maxAllowed <span class="t-p">=</span> position<span class="t-p">.</span>maxScrollExtent <span class="t-p">+</span> _maxOverscroll<span class="t-p">;</span>
+
+  <span class="t-f">if</span> <span class="t-b1">(</span>value <span class="t-p">&lt;</span> position<span class="t-p">.</span>pixels <span class="t-p">&amp;&amp;</span> position<span class="t-p">.</span>pixels <span class="t-p">&lt;=</span> minAllowed<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> value <span class="t-p">-</span> position<span class="t-p">.</span>pixels<span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>value <span class="t-p">&lt;</span> minAllowed <span class="t-p">&amp;&amp;</span> minAllowed <span class="t-p">&lt;</span> position<span class="t-p">.</span>pixels<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> value <span class="t-p">-</span> minAllowed<span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>position<span class="t-p">.</span>pixels <span class="t-p">&lt;</span> maxAllowed <span class="t-p">&amp;&amp;</span> maxAllowed <span class="t-p">&lt;</span> value<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> value <span class="t-p">-</span> maxAllowed<span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>maxAllowed <span class="t-p">&lt;=</span> position<span class="t-p">.</span>pixels <span class="t-p">&amp;&amp;</span> position<span class="t-p">.</span>pixels <span class="t-p">&lt;</span> value<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> value <span class="t-p">-</span> position<span class="t-p">.</span>pixels<span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-f">return</span> <span class="t-n">0.0</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+</section>
+<div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#default-implementation">Default Implementation</a></li><li><a href="#allow-free-overscroll-ios-bounce-style">Allow Free Overscroll (iOS Bounce Style)</a></li><li><a href="#hard-clamp-at-top-bounce-at-bottom">Hard Clamp at Top, Bounce at Bottom</a></li><li><a href="#cap-maximum-overscroll-distance">Cap Maximum Overscroll Distance</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>

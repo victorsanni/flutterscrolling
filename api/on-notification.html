@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>NotificationListener&lt;ScrollNotification&gt; | Flutter Scrolling</title>
+<meta name="description" content="Handle bubbling ScrollNotifications and ScrollMetricsNotifications from any descendant scrollable.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+</head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a href="../guides/index.html">Guides</a></li><li><a class="active" href="../api/index.html">API</a></li><li><a href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>API</h3><ul><li><a href="../api/index.html" title="Overview">Overview</a></li></ul></div><div class="sidebar-group"><h3>Scroll Physics</h3><ul><li><a href="../api/apply-to.html" title="applyTo()">applyTo()</a></li><li><a href="../api/apply-physics-to-user-offset.html" title="applyPhysicsToUserOffset()">applyPhysicsToUserOffset()</a></li><li><a href="../api/apply-boundary-conditions.html" title="applyBoundaryConditions()">applyBoundaryConditions()</a></li><li><a href="../api/create-ballistic-simulation.html" title="createBallisticSimulation()">createBallisticSimulation()</a></li></ul></div><div class="sidebar-group"><h3>Position and Controller</h3><ul><li><a href="../api/jump-to.html" title="jumpTo()">jumpTo()</a></li><li><a href="../api/animate-to.html" title="animateTo()">animateTo()</a></li><li><a href="../api/ensure-visible.html" title="ensureVisible()">ensureVisible()</a></li><li><a href="../api/create-scroll-position.html" title="createScrollPosition()">createScrollPosition()</a></li><li><a href="../api/scroll-metrics.html" title="ScrollMetrics">ScrollMetrics</a></li></ul></div><div class="sidebar-group"><h3>Notifications</h3><ul><li><a class="active" href="../api/on-notification.html" title="onNotification">onNotification</a></li></ul></div><div class="sidebar-group"><h3>Slivers</h3><ul><li><a href="../api/sliver-constraints.html" title="SliverConstraints">SliverConstraints</a></li><li><a href="../api/sliver-geometry.html" title="SliverGeometry">SliverGeometry</a></li><li><a href="../api/sliver-perform-layout.html" title="performLayout()">performLayout()</a></li><li><a href="../api/child-main-axis-position.html" title="childMainAxisPosition()">childMainAxisPosition()</a></li></ul></div><div class="sidebar-group"><h3>Scroll Behavior</h3><ul><li><a href="../api/get-scroll-physics.html" title="getScrollPhysics()">getScrollPhysics()</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>NotificationListener&lt;ScrollNotification&gt;</h1><p>Handle bubbling ScrollNotifications and ScrollMetricsNotifications from any descendant scrollable.</p></header>
+<section class="content">
+<p><code>NotificationListener&lt;T&gt;</code> intercepts scroll notifications bubbling up the element tree via its <code>bool Function(T notification)? onNotification</code> callback.</p>
+<ul><li>Return <code>false</code> to allow the notification to keep bubbling to ancestors (<code>Scrollbar</code>, <code>RefreshIndicator</code>, <code>Scaffold</code>).</li><li>Return <code>true</code> to stop bubbling at this listener.</li></ul>
+<h2 id="default-filter-defaultscrollnotificationpredicate"><span>Default Filter (<code>defaultScrollNotificationPredicate</code>)</span><a class="anchor" href="#default-filter-defaultscrollnotificationpredicate" aria-label="Link to this section">#</a></h2>
+<p>Any nested scroll view (like a horizontal carousel inside a vertical list) bubbles through outer listeners with <code>notification.depth &gt; 0</code>. Filter to the nearest child viewport with <code>notification.depth == 0</code>:</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">NotificationListener</span><span class="t-p">&lt;</span><span class="t-t">ScrollNotification</span><span class="t-p">&gt;</span><span class="t-b0">(</span>
+  onNotification<span class="t-p">:</span> <span class="t-b1">(</span><span class="t-t">ScrollNotification</span> notification<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>notification<span class="t-p">.</span>depth <span class="t-p">!=</span> <span class="t-n">0</span><span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-f">return</span> <span class="t-k">false</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-c">// Handle direct child scroll view here.</span>
+    <span class="t-f">return</span> <span class="t-k">false</span><span class="t-p">;</span>
+  <span class="t-b1">}</span><span class="t-p">,</span>
+  child<span class="t-p">:</span> child<span class="t-p">,</span>
+<span class="t-b0">)</span></code></pre></div>
+<h2 id="show-app-bar-divider-only-when-scrolled-under"><span>Show App-Bar Divider Only When Scrolled Under</span><a class="anchor" href="#show-app-bar-divider-only-when-scrolled-under" aria-label="Link to this section">#</a></h2>
+<p>Example that toggles <code>setState</code> <em>only</em> when the boolean <code>isElevated</code> actually flips, avoiding <code>60fps</code> widget rebuilds.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">bool</span> _isElevated <span class="t-p">=</span> <span class="t-k">false</span><span class="t-p">;</span>
+
+<span class="t-t">Widget</span> <span class="t-m">buildBody</span><span class="t-b0">(</span><span class="t-t">Widget</span> scrollView<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-f">return</span> <span class="t-t">NotificationListener</span><span class="t-p">&lt;</span><span class="t-t">ScrollUpdateNotification</span><span class="t-p">&gt;</span><span class="t-b1">(</span>
+    onNotification<span class="t-p">:</span> <span class="t-b2">(</span><span class="t-t">ScrollUpdateNotification</span> notification<span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-f">if</span> <span class="t-b3">(</span>notification<span class="t-p">.</span>depth <span class="t-p">==</span> <span class="t-n">0</span><span class="t-b3">)</span> <span class="t-b3">{</span>
+        <span class="t-k">final</span> <span class="t-t">bool</span> next <span class="t-p">=</span> notification<span class="t-p">.</span>metrics<span class="t-p">.</span>extentBefore <span class="t-p">&gt;</span> <span class="t-n">0.0</span><span class="t-p">;</span>
+        <span class="t-f">if</span> <span class="t-b4">(</span>next <span class="t-p">!=</span> _isElevated<span class="t-b4">)</span> <span class="t-b4">{</span>
+          <span class="t-m">setState</span><span class="t-b5">(</span><span class="t-b0">(</span><span class="t-b0">)</span> <span class="t-p">=&gt;</span> _isElevated <span class="t-p">=</span> next<span class="t-b5">)</span><span class="t-p">;</span>
+        <span class="t-b4">}</span>
+      <span class="t-b3">}</span>
+      <span class="t-f">return</span> <span class="t-k">false</span><span class="t-p">;</span>
+    <span class="t-b2">}</span><span class="t-p">,</span>
+    child<span class="t-p">:</span> scrollView<span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="hide-floating-action-button-on-downward-drag"><span>Hide Floating Action Button on Downward Drag</span><a class="anchor" href="#hide-floating-action-button-on-downward-drag" aria-label="Link to this section">#</a></h2>
+<p>Example that listens specifically to <code>UserScrollNotification</code> so programmatic animations or bounce-back springs do not hide the button unexpectedly.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">NotificationListener</span><span class="t-p">&lt;</span><span class="t-t">UserScrollNotification</span><span class="t-p">&gt;</span><span class="t-b0">(</span>
+  onNotification<span class="t-p">:</span> <span class="t-b1">(</span><span class="t-t">UserScrollNotification</span> notification<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>notification<span class="t-p">.</span>depth <span class="t-p">!=</span> <span class="t-n">0</span><span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-f">return</span> <span class="t-k">false</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>notification<span class="t-p">.</span>direction <span class="t-p">==</span> <span class="t-t">ScrollDirection</span><span class="t-p">.</span>reverse <span class="t-p">&amp;&amp;</span> _fabVisible<span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-m">setState</span><span class="t-b3">(</span><span class="t-b4">(</span><span class="t-b4">)</span> <span class="t-p">=&gt;</span> _fabVisible <span class="t-p">=</span> <span class="t-k">false</span><span class="t-b3">)</span><span class="t-p">;</span>
+    <span class="t-b2">}</span> <span class="t-f">else</span> <span class="t-f">if</span> <span class="t-b2">(</span>notification<span class="t-p">.</span>direction <span class="t-p">==</span> <span class="t-t">ScrollDirection</span><span class="t-p">.</span>forward <span class="t-p">&amp;&amp;</span> <span class="t-p">!</span>_fabVisible<span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-m">setState</span><span class="t-b3">(</span><span class="t-b4">(</span><span class="t-b4">)</span> <span class="t-p">=&gt;</span> _fabVisible <span class="t-p">=</span> <span class="t-k">true</span><span class="t-b3">)</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-f">return</span> <span class="t-k">false</span><span class="t-p">;</span>
+  <span class="t-b1">}</span><span class="t-p">,</span>
+  child<span class="t-p">:</span> listView<span class="t-p">,</span>
+<span class="t-b0">)</span></code></pre></div>
+<h2 id="react-when-content-grows-without-scrolling-scrollmetricsnotification"><span>React When Content Grows Without Scrolling (<code>ScrollMetricsNotification</code>)</span><a class="anchor" href="#react-when-content-grows-without-scrolling-scrollmetricsnotification" aria-label="Link to this section">#</a></h2>
+<p>Example that catches post-layout extent changes (<code>ScrollMetricsNotification</code> does not extend <code>ScrollNotification</code>).</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">NotificationListener</span><span class="t-p">&lt;</span><span class="t-t">ScrollMetricsNotification</span><span class="t-p">&gt;</span><span class="t-b0">(</span>
+  onNotification<span class="t-p">:</span> <span class="t-b1">(</span><span class="t-t">ScrollMetricsNotification</span> notification<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>notification<span class="t-p">.</span>depth <span class="t-p">==</span> <span class="t-n">0</span><span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-k">final</span> <span class="t-t">bool</span> scrollable <span class="t-p">=</span> notification<span class="t-p">.</span>metrics<span class="t-p">.</span>maxScrollExtent <span class="t-p">&gt;</span> <span class="t-n">0.0</span><span class="t-p">;</span>
+      <span class="t-f">if</span> <span class="t-b3">(</span>scrollable <span class="t-p">!=</span> _canScrollDown<span class="t-b3">)</span> <span class="t-b3">{</span>
+        <span class="t-m">setState</span><span class="t-b4">(</span><span class="t-b5">(</span><span class="t-b5">)</span> <span class="t-p">=&gt;</span> _canScrollDown <span class="t-p">=</span> scrollable<span class="t-b4">)</span><span class="t-p">;</span>
+      <span class="t-b3">}</span>
+    <span class="t-b2">}</span>
+    <span class="t-f">return</span> <span class="t-k">false</span><span class="t-p">;</span>
+  <span class="t-b1">}</span><span class="t-p">,</span>
+  child<span class="t-p">:</span> listView<span class="t-p">,</span>
+<span class="t-b0">)</span></code></pre></div>
+</section>
+<div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#default-filter-defaultscrollnotificationpredicate">Default Filter (defaultScrollNotificationPredicate)</a></li><li><a href="#show-app-bar-divider-only-when-scrolled-under">Show App-Bar Divider Only When Scrolled Under</a></li><li><a href="#hide-floating-action-button-on-downward-drag">Hide Floating Action Button on Downward Drag</a></li><li><a href="#react-when-content-grows-without-scrolling-scrollmetricsnotification">React When Content Grows Without Scrolling (ScrollMetricsNotification)</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>childMainAxisPosition() | Flutter Scrolling</title>
+<meta name="description" content="Implement childMainAxisPosition() in a custom RenderSliver to align painting, hit testing, and coordinate transforms.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+</head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a href="../guides/index.html">Guides</a></li><li><a class="active" href="../api/index.html">API</a></li><li><a href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>API</h3><ul><li><a href="../api/index.html" title="Overview">Overview</a></li></ul></div><div class="sidebar-group"><h3>Scroll Physics</h3><ul><li><a href="../api/apply-to.html" title="applyTo()">applyTo()</a></li><li><a href="../api/apply-physics-to-user-offset.html" title="applyPhysicsToUserOffset()">applyPhysicsToUserOffset()</a></li><li><a href="../api/apply-boundary-conditions.html" title="applyBoundaryConditions()">applyBoundaryConditions()</a></li><li><a href="../api/create-ballistic-simulation.html" title="createBallisticSimulation()">createBallisticSimulation()</a></li></ul></div><div class="sidebar-group"><h3>Position and Controller</h3><ul><li><a href="../api/jump-to.html" title="jumpTo()">jumpTo()</a></li><li><a href="../api/animate-to.html" title="animateTo()">animateTo()</a></li><li><a href="../api/ensure-visible.html" title="ensureVisible()">ensureVisible()</a></li><li><a href="../api/create-scroll-position.html" title="createScrollPosition()">createScrollPosition()</a></li><li><a href="../api/scroll-metrics.html" title="ScrollMetrics">ScrollMetrics</a></li></ul></div><div class="sidebar-group"><h3>Notifications</h3><ul><li><a href="../api/on-notification.html" title="onNotification">onNotification</a></li></ul></div><div class="sidebar-group"><h3>Slivers</h3><ul><li><a href="../api/sliver-constraints.html" title="SliverConstraints">SliverConstraints</a></li><li><a href="../api/sliver-geometry.html" title="SliverGeometry">SliverGeometry</a></li><li><a href="../api/sliver-perform-layout.html" title="performLayout()">performLayout()</a></li><li><a class="active" href="../api/child-main-axis-position.html" title="childMainAxisPosition()">childMainAxisPosition()</a></li></ul></div><div class="sidebar-group"><h3>Scroll Behavior</h3><ul><li><a href="../api/get-scroll-physics.html" title="getScrollPhysics()">getScrollPhysics()</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>childMainAxisPosition()</h1><p>Implement childMainAxisPosition() in a custom RenderSliver to align painting, hit testing, and coordinate transforms.</p></header>
+<section class="content">
+<p>The <code>childMainAxisPosition(covariant RenderObject child)</code> method returns a child's main-axis paint position relative to the sliver's own zero point (<code>constraints.scrollOffset</code> inside the sliver).</p>
+<p><code>RenderSliverSingleBoxAdapter</code> and <code>RenderSliverMultiBoxAdaptor</code> read <code>childMainAxisPosition</code> in three places — <code>paint</code>, <code>hitTestBoxChild</code>, and <code>applyPaintTransform</code> — so overriding this one method keeps drawing and pointer hits automatically synchronized.</p>
+<h2 id="default-implementation"><span>Default Implementation</span><a class="anchor" href="#default-implementation" aria-label="Link to this section">#</a></h2>
+<p>On the base <code>RenderSliver</code>, calling <code>childMainAxisPosition</code> asserts and throws unless overridden:</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">double</span> <span class="t-m">childMainAxisPosition</span><span class="t-b0">(</span><span class="t-k">covariant</span> <span class="t-t">RenderObject</span> child<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-f">assert</span><span class="t-b1">(</span><span class="t-b2">(</span><span class="t-b2">)</span> <span class="t-b2">{</span>
+    <span class="t-f">throw</span> <span class="t-t">FlutterError</span><span class="t-p">.</span><span class="t-m">fromParts</span><span class="t-b3">(</span><span class="t-p">&lt;</span><span class="t-t">DiagnosticsNode</span><span class="t-p">&gt;</span><span class="t-b4">[</span>
+      <span class="t-t">ErrorSummary</span><span class="t-b5">(</span><span class="t-s">'${objectRuntimeType(this, '</span><span class="t-t">RenderSliver</span><span class="t-s">')} does not implement childMainAxisPosition.'</span><span class="t-b5">)</span><span class="t-p">,</span>
+    <span class="t-b4">]</span><span class="t-b3">)</span><span class="t-p">;</span>
+  <span class="t-b2">}</span><span class="t-b2">(</span><span class="t-b2">)</span><span class="t-b1">)</span><span class="t-p">;</span>
+  <span class="t-f">return</span> <span class="t-n">0.0</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="normal-scrolling-single-box--constraintsscrolloffset"><span>Normal Scrolling Single Box (<code>-constraints.scrollOffset</code>)</span><a class="anchor" href="#normal-scrolling-single-box--constraintsscrolloffset" aria-label="Link to this section">#</a></h2>
+<p>Example used by <code>RenderSliverToBoxAdapter</code>: as <code>constraints.scrollOffset</code> increases, the child slides off the leading edge by that exact distance (and <code>setChildParentData</code> writes the matching <code>paintOffset</code> onto <code>SliverPhysicalParentData</code>).</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">@override</span>
+<span class="t-t">double</span> <span class="t-m">childMainAxisPosition</span><span class="t-b0">(</span><span class="t-t">RenderBox</span> child<span class="t-b0">)</span> <span class="t-p">=&gt;</span> <span class="t-p">-</span>constraints<span class="t-p">.</span>scrollOffset<span class="t-p">;</span></code></pre></div>
+<h2 id="pinned-header-single-box-00"><span>Pinned Header Single Box (<code>0.0</code>)</span><a class="anchor" href="#pinned-header-single-box-00" aria-label="Link to this section">#</a></h2>
+<p>Example used by <code>PinnedHeaderSliver</code> and <a href="../examples/sticky-header.html">Sticky Header</a>: the child never slides past the sliver's leading edge, remaining anchored at <code>0.0</code> (shifted by <code>geometry.paintOrigin</code> if earlier headers overlap).</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">@override</span>
+<span class="t-t">double</span> <span class="t-m">childMainAxisPosition</span><span class="t-b0">(</span><span class="t-t">RenderBox</span> child<span class="t-b0">)</span> <span class="t-p">=&gt;</span> <span class="t-n">0.0</span><span class="t-p">;</span></code></pre></div>
+<h2 id="multi-child-list-item-layoutoffset---constraintsscrolloffset"><span>Multi-Child List Item (<code>layoutOffset - constraints.scrollOffset</code>)</span><a class="anchor" href="#multi-child-list-item-layoutoffset---constraintsscrolloffset" aria-label="Link to this section">#</a></h2>
+<p>Example used by <code>RenderSliverMultiBoxAdaptor</code> (<code>SliverList</code> / <code>SliverGrid</code>): each child stores its content-space start offset in <code>SliverMultiBoxAdaptorParentData.layoutOffset</code>, and subtracting <code>constraints.scrollOffset</code> converts that into viewport-relative coordinates.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">@override</span>
+<span class="t-t">double</span> <span class="t-m">childMainAxisPosition</span><span class="t-b0">(</span><span class="t-t">RenderBox</span> child<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-k">final</span> <span class="t-t">SliverMultiBoxAdaptorParentData</span> childParentData <span class="t-p">=</span>
+      child<span class="t-p">.</span>parentData<span class="t-p">!</span> <span class="t-k">as</span> <span class="t-t">SliverMultiBoxAdaptorParentData</span><span class="t-p">;</span>
+  <span class="t-f">return</span> childParentData<span class="t-p">.</span>layoutOffset<span class="t-p">!</span> <span class="t-p">-</span> constraints<span class="t-p">.</span>scrollOffset<span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+</section>
+<div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#default-implementation">Default Implementation</a></li><li><a href="#normal-scrolling-single-box--constraintsscrolloffset">Normal Scrolling Single Box (-constraints.scrollOffset)</a></li><li><a href="#pinned-header-single-box-00">Pinned Header Single Box (0.0)</a></li><li><a href="#multi-child-list-item-layoutoffset---constraintsscrolloffset">Multi-Child List Item (layoutOffset - constraints.scrollOffset)</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>

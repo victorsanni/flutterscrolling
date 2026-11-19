@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>Scrollable.ensureVisible() | Flutter Scrolling</title>
+<meta name="description" content="Use Scrollable.ensureVisible() to scroll any mounted BuildContext into the visible viewport window.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+</head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a href="../guides/index.html">Guides</a></li><li><a class="active" href="../api/index.html">API</a></li><li><a href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>API</h3><ul><li><a href="../api/index.html" title="Overview">Overview</a></li></ul></div><div class="sidebar-group"><h3>Scroll Physics</h3><ul><li><a href="../api/apply-to.html" title="applyTo()">applyTo()</a></li><li><a href="../api/apply-physics-to-user-offset.html" title="applyPhysicsToUserOffset()">applyPhysicsToUserOffset()</a></li><li><a href="../api/apply-boundary-conditions.html" title="applyBoundaryConditions()">applyBoundaryConditions()</a></li><li><a href="../api/create-ballistic-simulation.html" title="createBallisticSimulation()">createBallisticSimulation()</a></li></ul></div><div class="sidebar-group"><h3>Position and Controller</h3><ul><li><a href="../api/jump-to.html" title="jumpTo()">jumpTo()</a></li><li><a href="../api/animate-to.html" title="animateTo()">animateTo()</a></li><li><a class="active" href="../api/ensure-visible.html" title="ensureVisible()">ensureVisible()</a></li><li><a href="../api/create-scroll-position.html" title="createScrollPosition()">createScrollPosition()</a></li><li><a href="../api/scroll-metrics.html" title="ScrollMetrics">ScrollMetrics</a></li></ul></div><div class="sidebar-group"><h3>Notifications</h3><ul><li><a href="../api/on-notification.html" title="onNotification">onNotification</a></li></ul></div><div class="sidebar-group"><h3>Slivers</h3><ul><li><a href="../api/sliver-constraints.html" title="SliverConstraints">SliverConstraints</a></li><li><a href="../api/sliver-geometry.html" title="SliverGeometry">SliverGeometry</a></li><li><a href="../api/sliver-perform-layout.html" title="performLayout()">performLayout()</a></li><li><a href="../api/child-main-axis-position.html" title="childMainAxisPosition()">childMainAxisPosition()</a></li></ul></div><div class="sidebar-group"><h3>Scroll Behavior</h3><ul><li><a href="../api/get-scroll-physics.html" title="getScrollPhysics()">getScrollPhysics()</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>Scrollable.ensureVisible()</h1><p>Use Scrollable.ensureVisible() to scroll any mounted BuildContext into the visible viewport window.</p></header>
+<section class="content">
+<p><code>Scrollable.ensureVisible</code> walks up every enclosing <code>Scrollable</code> from a target <code>BuildContext</code> and scrolls each one so the target's <code>RenderObject</code> becomes visible inside the viewport.</p>
+<ul><li>The target widget <strong>must currently be mounted</strong> (built and laid out in the tree).</li><li>Respects <code>maxScrollObstructionExtent</code> reported by pinned slivers like <code>PinnedHeaderSliver</code> and <code>SliverAppBar(pinned: true)</code>.</li></ul>
+<h2 id="signature-and-defaults"><span>Signature and Defaults</span><a class="anchor" href="#signature-and-defaults" aria-label="Link to this section">#</a></h2>
+<p>With default arguments, <code>ensureVisible</code> jumps immediately (<code>Duration.zero</code>) and aligns the target with the viewport's leading edge (<code>alignment: 0.0</code>):</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">static</span> <span class="t-t">Future</span><span class="t-p">&lt;</span><span class="t-k">void</span><span class="t-p">&gt;</span> <span class="t-m">ensureVisible</span><span class="t-b0">(</span>
+  <span class="t-t">BuildContext</span> context<span class="t-p">,</span> <span class="t-b1">{</span>
+  <span class="t-t">double</span> alignment <span class="t-p">=</span> <span class="t-n">0.0</span><span class="t-p">,</span>
+  <span class="t-t">Duration</span> duration <span class="t-p">=</span> <span class="t-t">Duration</span><span class="t-p">.</span>zero<span class="t-p">,</span>
+  <span class="t-t">Curve</span> curve <span class="t-p">=</span> <span class="t-t">Curves</span><span class="t-p">.</span>ease<span class="t-p">,</span>
+  <span class="t-t">ScrollPositionAlignmentPolicy</span> alignmentPolicy <span class="t-p">=</span> <span class="t-t">ScrollPositionAlignmentPolicy</span><span class="t-p">.</span>explicit<span class="t-p">,</span>
+<span class="t-b1">}</span><span class="t-b0">)</span></code></pre></div>
+<h2 id="center-a-keyed-section-widget-smoothly"><span>Center a Keyed Section Widget Smoothly</span><a class="anchor" href="#center-a-keyed-section-widget-smoothly" aria-label="Link to this section">#</a></h2>
+<p>Example that centers a mounted form error or section header (<code>alignment: 0.5</code>) inside the viewport.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">final</span> <span class="t-t">BuildContext</span><span class="t-p">?</span> target <span class="t-p">=</span> sectionKey<span class="t-p">.</span>currentContext<span class="t-p">;</span>
+<span class="t-f">if</span> <span class="t-b0">(</span>target <span class="t-p">!=</span> <span class="t-k">null</span><span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-k">await</span> <span class="t-t">Scrollable</span><span class="t-p">.</span><span class="t-m">ensureVisible</span><span class="t-b1">(</span>
+    target<span class="t-p">,</span>
+    alignment<span class="t-p">:</span> <span class="t-n">0.5</span><span class="t-p">,</span>
+    duration<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">Duration</span><span class="t-b2">(</span>milliseconds<span class="t-p">:</span> <span class="t-n">250</span><span class="t-b2">)</span><span class="t-p">,</span>
+    curve<span class="t-p">:</span> <span class="t-t">Curves</span><span class="t-p">.</span>easeOutCubic<span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="reveal-only-if-clipped-below-the-bottom-edge"><span>Reveal Only If Clipped Below the Bottom Edge</span><a class="anchor" href="#reveal-only-if-clipped-below-the-bottom-edge" aria-label="Link to this section">#</a></h2>
+<p>Example for keyboard down-arrow selection: leaves the scroll offset untouched if the row is already fully visible, and scrolls just far enough to show its bottom edge if clipped.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">await</span> <span class="t-t">Scrollable</span><span class="t-p">.</span><span class="t-m">ensureVisible</span><span class="t-b0">(</span>
+  rowContext<span class="t-p">,</span>
+  alignmentPolicy<span class="t-p">:</span> <span class="t-t">ScrollPositionAlignmentPolicy</span><span class="t-p">.</span>keepVisibleAtEnd<span class="t-p">,</span>
+  duration<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">Duration</span><span class="t-b1">(</span>milliseconds<span class="t-p">:</span> <span class="t-n">150</span><span class="t-b1">)</span><span class="t-p">,</span>
+  curve<span class="t-p">:</span> <span class="t-t">Curves</span><span class="t-p">.</span>easeOut<span class="t-p">,</span>
+<span class="t-b0">)</span><span class="t-p">;</span></code></pre></div>
+<h2 id="reveal-only-if-clipped-above-the-top-edge"><span>Reveal Only If Clipped Above the Top Edge</span><a class="anchor" href="#reveal-only-if-clipped-above-the-top-edge" aria-label="Link to this section">#</a></h2>
+<p>Example for keyboard up-arrow selection: scrolls up just far enough to clear the leading edge (and any pinned header) if the row sits above the visible area.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">await</span> <span class="t-t">Scrollable</span><span class="t-p">.</span><span class="t-m">ensureVisible</span><span class="t-b0">(</span>
+  rowContext<span class="t-p">,</span>
+  alignmentPolicy<span class="t-p">:</span> <span class="t-t">ScrollPositionAlignmentPolicy</span><span class="t-p">.</span>keepVisibleAtStart<span class="t-p">,</span>
+  duration<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">Duration</span><span class="t-b1">(</span>milliseconds<span class="t-p">:</span> <span class="t-n">150</span><span class="t-b1">)</span><span class="t-p">,</span>
+  curve<span class="t-p">:</span> <span class="t-t">Curves</span><span class="t-p">.</span>easeOut<span class="t-p">,</span>
+<span class="t-b0">)</span><span class="t-p">;</span></code></pre></div>
+</section>
+<div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#signature-and-defaults">Signature and Defaults</a></li><li><a href="#center-a-keyed-section-widget-smoothly">Center a Keyed Section Widget Smoothly</a></li><li><a href="#reveal-only-if-clipped-below-the-bottom-edge">Reveal Only If Clipped Below the Bottom Edge</a></li><li><a href="#reveal-only-if-clipped-above-the-top-edge">Reveal Only If Clipped Above the Top Edge</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>

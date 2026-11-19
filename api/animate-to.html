@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>animateTo() | Flutter Scrolling</title>
+<meta name="description" content="Use animateTo() on ScrollController or ScrollPosition to smoothly drive pixels along a curve over a fixed duration.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+</head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a href="../guides/index.html">Guides</a></li><li><a class="active" href="../api/index.html">API</a></li><li><a href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>API</h3><ul><li><a href="../api/index.html" title="Overview">Overview</a></li></ul></div><div class="sidebar-group"><h3>Scroll Physics</h3><ul><li><a href="../api/apply-to.html" title="applyTo()">applyTo()</a></li><li><a href="../api/apply-physics-to-user-offset.html" title="applyPhysicsToUserOffset()">applyPhysicsToUserOffset()</a></li><li><a href="../api/apply-boundary-conditions.html" title="applyBoundaryConditions()">applyBoundaryConditions()</a></li><li><a href="../api/create-ballistic-simulation.html" title="createBallisticSimulation()">createBallisticSimulation()</a></li></ul></div><div class="sidebar-group"><h3>Position and Controller</h3><ul><li><a href="../api/jump-to.html" title="jumpTo()">jumpTo()</a></li><li><a class="active" href="../api/animate-to.html" title="animateTo()">animateTo()</a></li><li><a href="../api/ensure-visible.html" title="ensureVisible()">ensureVisible()</a></li><li><a href="../api/create-scroll-position.html" title="createScrollPosition()">createScrollPosition()</a></li><li><a href="../api/scroll-metrics.html" title="ScrollMetrics">ScrollMetrics</a></li></ul></div><div class="sidebar-group"><h3>Notifications</h3><ul><li><a href="../api/on-notification.html" title="onNotification">onNotification</a></li></ul></div><div class="sidebar-group"><h3>Slivers</h3><ul><li><a href="../api/sliver-constraints.html" title="SliverConstraints">SliverConstraints</a></li><li><a href="../api/sliver-geometry.html" title="SliverGeometry">SliverGeometry</a></li><li><a href="../api/sliver-perform-layout.html" title="performLayout()">performLayout()</a></li><li><a href="../api/child-main-axis-position.html" title="childMainAxisPosition()">childMainAxisPosition()</a></li></ul></div><div class="sidebar-group"><h3>Scroll Behavior</h3><ul><li><a href="../api/get-scroll-physics.html" title="getScrollPhysics()">getScrollPhysics()</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>animateTo()</h1><p>Use animateTo() on ScrollController or ScrollPosition to smoothly drive pixels along a curve over a fixed duration.</p></header>
+<section class="content">
+<p>The <code>animateTo(double offset, {required Duration duration, required Curve curve})</code> method starts a <code>DrivenScrollActivity</code> from the current <code>pixels</code> to <code>offset</code> and returns a <code>Future&lt;void&gt;</code> that completes when the animation finishes (or is interrupted by another gesture or activity).</p>
+<h2 id="default-implementation"><span>Default Implementation</span><a class="anchor" href="#default-implementation" aria-label="Link to this section">#</a></h2>
+<p>On <code>ScrollController</code>, <code>animateTo</code> starts an animation on every attached <code>ScrollPosition</code> and waits for all of them with <code>Future.wait</code>:</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">Future</span><span class="t-p">&lt;</span><span class="t-k">void</span><span class="t-p">&gt;</span> <span class="t-m">animateTo</span><span class="t-b0">(</span>
+  <span class="t-t">double</span> offset<span class="t-p">,</span> <span class="t-b1">{</span>
+  <span class="t-k">required</span> <span class="t-t">Duration</span> duration<span class="t-p">,</span>
+  <span class="t-k">required</span> <span class="t-t">Curve</span> curve<span class="t-p">,</span>
+<span class="t-b1">}</span><span class="t-b0">)</span> <span class="t-k">async</span> <span class="t-b0">{</span>
+  <span class="t-f">assert</span><span class="t-b1">(</span>_positions<span class="t-p">.</span>isNotEmpty<span class="t-p">,</span> <span class="t-s">'ScrollController not attached to any scroll views.'</span><span class="t-b1">)</span><span class="t-p">;</span>
+  <span class="t-k">await</span> <span class="t-t">Future</span><span class="t-p">.</span>wait<span class="t-p">&lt;</span><span class="t-k">void</span><span class="t-p">&gt;</span><span class="t-b1">(</span><span class="t-p">&lt;</span><span class="t-t">Future</span><span class="t-p">&lt;</span><span class="t-k">void</span><span class="t-p">&gt;&gt;</span><span class="t-b2">[</span>
+    <span class="t-f">for</span> <span class="t-b3">(</span><span class="t-t">int</span> i <span class="t-p">=</span> <span class="t-n">0</span><span class="t-p">;</span> i <span class="t-p">&lt;</span> _positions<span class="t-p">.</span>length<span class="t-p">;</span> i <span class="t-p">+=</span> <span class="t-n">1</span><span class="t-b3">)</span>
+      _positions<span class="t-b3">[</span>i<span class="t-b3">]</span><span class="t-p">.</span><span class="t-m">animateTo</span><span class="t-b3">(</span>offset<span class="t-p">,</span> duration<span class="t-p">:</span> duration<span class="t-p">,</span> curve<span class="t-p">:</span> curve<span class="t-b3">)</span><span class="t-p">,</span>
+  <span class="t-b2">]</span><span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="smooth-scroll-to-top"><span>Smooth Scroll to Top</span><a class="anchor" href="#smooth-scroll-to-top" aria-label="Link to this section">#</a></h2>
+<p>Example that animates back to <code>0.0</code> with an ease-out curve when the user taps a floating button.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">Future</span><span class="t-p">&lt;</span><span class="t-k">void</span><span class="t-p">&gt;</span> <span class="t-m">scrollToTop</span><span class="t-b0">(</span><span class="t-t">ScrollController</span> controller<span class="t-b0">)</span> <span class="t-k">async</span> <span class="t-b0">{</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span><span class="t-p">!</span>controller<span class="t-p">.</span>hasClients<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-k">await</span> controller<span class="t-p">.</span><span class="t-m">animateTo</span><span class="t-b1">(</span>
+    <span class="t-n">0.0</span><span class="t-p">,</span>
+    duration<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">Duration</span><span class="t-b2">(</span>milliseconds<span class="t-p">:</span> <span class="t-n">320</span><span class="t-b2">)</span><span class="t-p">,</span>
+    curve<span class="t-p">:</span> <span class="t-t">Curves</span><span class="t-p">.</span>easeOutCubic<span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="cap-travel-time-on-very-long-lists"><span>Cap Travel Time on Very Long Lists</span><a class="anchor" href="#cap-travel-time-on-very-long-lists" aria-label="Link to this section">#</a></h2>
+<p>Example that jumps near the destination first when <code>pixels</code> is thousands of pixels away, then animates only the final two screenfuls so the user never sees a blurry 60-item flash.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">Future</span><span class="t-p">&lt;</span><span class="t-k">void</span><span class="t-p">&gt;</span> <span class="t-m">smartScrollToTop</span><span class="t-b0">(</span><span class="t-t">ScrollController</span> controller<span class="t-b0">)</span> <span class="t-k">async</span> <span class="t-b0">{</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span><span class="t-p">!</span>controller<span class="t-p">.</span>hasClients<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-k">final</span> <span class="t-t">double</span> maxRunup <span class="t-p">=</span> controller<span class="t-p">.</span>position<span class="t-p">.</span>viewportDimension <span class="t-p">*</span> <span class="t-n">2.0</span><span class="t-p">;</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>controller<span class="t-p">.</span>offset <span class="t-p">&gt;</span> maxRunup<span class="t-b1">)</span> <span class="t-b1">{</span>
+    controller<span class="t-p">.</span><span class="t-m">jumpTo</span><span class="t-b2">(</span>maxRunup<span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-k">await</span> controller<span class="t-p">.</span><span class="t-m">animateTo</span><span class="t-b1">(</span>
+    <span class="t-n">0.0</span><span class="t-p">,</span>
+    duration<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">Duration</span><span class="t-b2">(</span>milliseconds<span class="t-p">:</span> <span class="t-n">280</span><span class="t-b2">)</span><span class="t-p">,</span>
+    curve<span class="t-p">:</span> <span class="t-t">Curves</span><span class="t-p">.</span>easeOutCubic<span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="respect-reduced-motion-accessibility-preferences"><span>Respect Reduced-Motion Accessibility Preferences</span><a class="anchor" href="#respect-reduced-motion-accessibility-preferences" aria-label="Link to this section">#</a></h2>
+<p>Example that switches from <code>animateTo</code> to an instant <code>jumpTo</code> when the user has enabled system reduced motion.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">Future</span><span class="t-p">&lt;</span><span class="t-k">void</span><span class="t-p">&gt;</span> <span class="t-m">scrollToOffset</span><span class="t-b0">(</span><span class="t-t">BuildContext</span> context<span class="t-p">,</span> <span class="t-t">ScrollController</span> controller<span class="t-p">,</span> <span class="t-t">double</span> target<span class="t-b0">)</span> <span class="t-k">async</span> <span class="t-b0">{</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span><span class="t-p">!</span>controller<span class="t-p">.</span>hasClients<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span><span class="t-t">MediaQuery</span><span class="t-p">.</span><span class="t-m">disableAnimationsOf</span><span class="t-b2">(</span>context<span class="t-b2">)</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    controller<span class="t-p">.</span><span class="t-m">jumpTo</span><span class="t-b2">(</span>target<span class="t-b2">)</span><span class="t-p">;</span>
+    <span class="t-f">return</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-k">await</span> controller<span class="t-p">.</span><span class="t-m">animateTo</span><span class="t-b1">(</span>
+    target<span class="t-p">,</span>
+    duration<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">Duration</span><span class="t-b2">(</span>milliseconds<span class="t-p">:</span> <span class="t-n">250</span><span class="t-b2">)</span><span class="t-p">,</span>
+    curve<span class="t-p">:</span> <span class="t-t">Curves</span><span class="t-p">.</span>easeInOut<span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+</section>
+<div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#default-implementation">Default Implementation</a></li><li><a href="#smooth-scroll-to-top">Smooth Scroll to Top</a></li><li><a href="#cap-travel-time-on-very-long-lists">Cap Travel Time on Very Long Lists</a></li><li><a href="#respect-reduced-motion-accessibility-preferences">Respect Reduced-Motion Accessibility Preferences</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>

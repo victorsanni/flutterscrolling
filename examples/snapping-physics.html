@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>Snapping Physics | Flutter Scrolling</title>
+<meta name="description" content="Custom ScrollPhysics that always settle on an item boundary.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+<script src="../assets/demos.js" defer></script></head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a href="../guides/index.html">Guides</a></li><li><a href="../api/index.html">API</a></li><li><a class="active" href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>Examples</h3><ul><li><a href="../examples/index.html" title="Overview">Overview</a></li><li><a class="active" href="../examples/snapping-physics.html" title="Snapping Physics">Snapping Physics</a></li><li><a href="../examples/minimal-viewport.html" title="Minimal Viewport">Minimal Viewport</a></li><li><a href="../examples/sticky-header.html" title="Sticky Header">Sticky Header</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>Snapping Physics</h1><p>Custom ScrollPhysics that always settle on an item boundary.</p></header>
+<section class="content">
+<p>A horizontal strip of cards where dragging feels completely ordinary while your finger is down, and releasing always settles cleanly onto a card boundary — advancing to the next card on a quick flick or snapping back to the nearest one after a slow drag.</p>
+<h2 id="why-custom-scrollphysics"><span>Why Custom <code>ScrollPhysics</code>?</span><a class="anchor" href="#why-custom-scrollphysics" aria-label="Link to this section">#</a></h2>
+<p>Flutter ships <code>PageScrollPhysics</code> for <code>PageView</code>, where every page is as wide as the viewport (<code>viewportDimension * viewportFraction</code>). As soon as your items are narrower than the viewport — say a strip of <code>220px</code> cards inside a <code>400px</code> screen — <code>PageScrollPhysics</code> snaps to viewport multiples instead of card multiples.</p>
+<p>You could try listening to <code>ScrollEndNotification</code> and calling <code>controller.animateTo(...)</code> after every scroll finishes. That approach fights the framework: the list decelerates under standard friction first, comes to a stop, and then jerks into a second animation. Custom <code>ScrollPhysics</code> replace the ballistic simulation <em>at the moment the finger lifts</em>, so the card glides into place in one continuous spring motion with the user's release velocity preserved.</p>
+<h2 id="try-it-out"><span>Try it Out</span><a class="anchor" href="#try-it-out" aria-label="Link to this section">#</a></h2>
+<p>Drag the strip left or right, flick it quickly, or switch between <code>SnapScrollPhysics</code> and plain clamping physics to feel the difference when you let go.</p>
+<div class="demo" data-demo="snapping">
+<div class="demo-stage">
+<div class="demo-view"><canvas width="320" height="180"></canvas></div>
+<div class="demo-side">
+<div class="demo-heading">Live ScrollPosition</div>
+<table class="demo-readout">
+<tr><td>pixels</td><td data-f="pixels">0.0</td></tr>
+<tr><td>velocity</td><td data-f="velocity">0 px/s</td></tr>
+<tr><td>activity</td><td data-f="activity">idle</td></tr>
+<tr><td>pixels / itemExtent</td><td data-f="item">0.00</td></tr>
+<tr><td>targetPixels</td><td class="hot" data-f="target">0.0</td></tr>
+</table>
+</div>
+</div>
+<div class="demo-controls">
+<label>Physics</label>
+<button class="demo-btn on" type="button" data-mode="snap">SnapScrollPhysics</button>
+<button class="demo-btn" type="button" data-mode="clamp">ClampingScrollPhysics</button>
+<span class="demo-spacer"></span>
+<button class="demo-btn" type="button" data-action="fling">Fling +1 →</button>
+</div>
+<div class="demo-note">Drag or use a trackpad/wheel. With snapping on, releasing launches a single spring toward <code>targetPixels</code>.</div>
+</div>
+<h2 id="the-implementation"><span>The Implementation</span><a class="anchor" href="#the-implementation" aria-label="Link to this section">#</a></h2>
+<h3 id="preserving-the-physics-chain-with-applyto"><span>Preserving the Physics Chain with <code>applyTo</code></span><a class="anchor" href="#preserving-the-physics-chain-with-applyto" aria-label="Link to this section">#</a></h3>
+<p><code>Scrollable</code> never uses your <code>ScrollPhysics</code> object directly. It merges the widget's physics with the ambient <code>ScrollBehavior</code> physics by calling <code>physics.applyTo(ambientPhysics)</code>. The base <code>ScrollPhysics.applyTo</code> returns a plain <code>ScrollPhysics</code>, so if you forget to override <code>applyTo</code>, your subclass is silently discarded before the first frame.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">@override</span>
+<span class="t-t">SnapScrollPhysics</span> <span class="t-m">applyTo</span><span class="t-b0">(</span><span class="t-t">ScrollPhysics</span><span class="t-p">?</span> ancestor<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-f">return</span> <span class="t-t">SnapScrollPhysics</span><span class="t-b1">(</span>
+    itemExtent<span class="t-p">:</span> itemExtent<span class="t-p">,</span>
+    parent<span class="t-p">:</span> <span class="t-m">buildParent</span><span class="t-b2">(</span>ancestor<span class="t-b2">)</span><span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span>
+
+<span class="t-k">@override</span>
+<span class="t-t">bool</span> <span class="t-m">shouldUpdate</span><span class="t-b0">(</span><span class="t-k">covariant</span> <span class="t-t">SnapScrollPhysics</span> old<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-f">return</span> itemExtent <span class="t-p">!=</span> old<span class="t-p">.</span>itemExtent <span class="t-p">||</span> <span class="t-k">super</span><span class="t-p">.</span><span class="t-m">shouldUpdate</span><span class="t-b1">(</span>old<span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<p><code>buildParent(ancestor)</code> chains <code>ancestor</code> onto any existing <code>parent</code> already attached to your instance. Overriding <code>shouldUpdate</code> tells <code>ScrollableState</code> to rebuild the merged chain if the caller rebuilds with a different <code>itemExtent</code>.</p>
+<h3 id="choosing-the-landing-offset"><span>Choosing the Landing Offset</span><a class="anchor" href="#choosing-the-landing-offset" aria-label="Link to this section">#</a></h3>
+<p>When the finger lifts, <code>pixels / itemExtent</code> gives the fractional item index currently aligned with the leading edge. A slow release rounds to the nearest integer. A flick whose speed exceeds <code>tolerance.velocity</code> nudges that fractional index by <code>0.5</code> in the fling direction before rounding, which guarantees advancing to the next card even if the finger barely crossed <code>10%</code> of the card width.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">double</span> <span class="t-m">_targetPixels</span><span class="t-b0">(</span>
+  <span class="t-t">ScrollMetrics</span> position<span class="t-p">,</span>
+  <span class="t-t">Tolerance</span> tolerance<span class="t-p">,</span>
+  <span class="t-t">double</span> velocity<span class="t-p">,</span>
+<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-t">double</span> item <span class="t-p">=</span> position<span class="t-p">.</span>pixels <span class="t-p">/</span> itemExtent<span class="t-p">;</span>
+  <span class="t-c">// A fling commits to the next item in its direction, however short the</span>
+  <span class="t-c">// drag was. Without a fling, the nearest item wins.</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>velocity <span class="t-p">&lt;</span> <span class="t-p">-</span>tolerance<span class="t-p">.</span>velocity<span class="t-b1">)</span> <span class="t-b1">{</span>
+    item <span class="t-p">-=</span> <span class="t-n">0.5</span><span class="t-p">;</span>
+  <span class="t-b1">}</span> <span class="t-f">else</span> <span class="t-f">if</span> <span class="t-b1">(</span>velocity <span class="t-p">&gt;</span> tolerance<span class="t-p">.</span>velocity<span class="t-b1">)</span> <span class="t-b1">{</span>
+    item <span class="t-p">+=</span> <span class="t-n">0.5</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-f">return</span> <span class="t-m">clampDouble</span><span class="t-b1">(</span>
+    item<span class="t-p">.</span><span class="t-m">roundToDouble</span><span class="t-b2">(</span><span class="t-b2">)</span> <span class="t-p">*</span> itemExtent<span class="t-p">,</span>
+    position<span class="t-p">.</span>minScrollExtent<span class="t-p">,</span>
+    position<span class="t-p">.</span>maxScrollExtent<span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<p>Clamping to <code>[minScrollExtent, maxScrollExtent]</code> ensures the last card never snaps past the end of the content when the viewport holds multiple cards at once.</p>
+<h3 id="returning-the-ballistic-simulation"><span>Returning the Ballistic Simulation</span><a class="anchor" href="#returning-the-ballistic-simulation" aria-label="Link to this section">#</a></h3>
+<p><code>createBallisticSimulation</code> runs whenever the position enters a ballistic phase — right after a drag ends, after content dimensions change, or at the end of <code>jumpTo</code>. Two edge cases keep the physics feeling native:</p>
+<ol><li>If the user is already overscrolled at either end and moving <em>away</em> from the list, delegate to <code>super.createBallisticSimulation</code> so the platform's own bounce or clamp handles the edge.</li><li>If <code>target == position.pixels</code>, return <code>null</code> so the position transitions straight to <code>IdleScrollActivity</code> without scheduling a zero-distance animation controller tick.</li></ol>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">@override</span>
+<span class="t-t">Simulation</span><span class="t-p">?</span> <span class="t-m">createBallisticSimulation</span><span class="t-b0">(</span>
+  <span class="t-t">ScrollMetrics</span> position<span class="t-p">,</span>
+  <span class="t-t">double</span> velocity<span class="t-p">,</span>
+<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-c">// Out of range and not heading back in: let the parent physics bring the</span>
+  <span class="t-c">// position back, exactly as it would without snapping.</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span><span class="t-b2">(</span>velocity <span class="t-p">&lt;=</span> <span class="t-n">0.0</span> <span class="t-p">&amp;&amp;</span> position<span class="t-p">.</span>pixels <span class="t-p">&lt;=</span> position<span class="t-p">.</span>minScrollExtent<span class="t-b2">)</span> <span class="t-p">||</span>
+      <span class="t-b2">(</span>velocity <span class="t-p">&gt;=</span> <span class="t-n">0.0</span> <span class="t-p">&amp;&amp;</span> position<span class="t-p">.</span>pixels <span class="t-p">&gt;=</span> position<span class="t-p">.</span>maxScrollExtent<span class="t-b2">)</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> <span class="t-k">super</span><span class="t-p">.</span><span class="t-m">createBallisticSimulation</span><span class="t-b2">(</span>position<span class="t-p">,</span> velocity<span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-k">final</span> <span class="t-t">Tolerance</span> tolerance <span class="t-p">=</span> <span class="t-m">toleranceFor</span><span class="t-b1">(</span>position<span class="t-b1">)</span><span class="t-p">;</span>
+  <span class="t-k">final</span> <span class="t-t">double</span> target <span class="t-p">=</span> <span class="t-m">_targetPixels</span><span class="t-b1">(</span>position<span class="t-p">,</span> tolerance<span class="t-p">,</span> velocity<span class="t-b1">)</span><span class="t-p">;</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>target <span class="t-p">!=</span> position<span class="t-p">.</span>pixels<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> <span class="t-t">ScrollSpringSimulation</span><span class="t-b2">(</span>
+      spring<span class="t-p">,</span>
+      position<span class="t-p">.</span>pixels<span class="t-p">,</span>
+      target<span class="t-p">,</span>
+      velocity<span class="t-p">,</span>
+      tolerance<span class="t-p">:</span> tolerance<span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-c">// Already resting on an item boundary: nothing to simulate.</span>
+  <span class="t-f">return</span> <span class="t-k">null</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<p>Passing the user's release <code>velocity</code> into <code>ScrollSpringSimulation</code> is what makes a fast flick arrive briskly without a visible hitch at liftoff.</p>
+<h2 id="full-source-code"><span>Full Source Code</span><a class="anchor" href="#full-source-code" aria-label="Link to this section">#</a></h2>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">import</span> <span class="t-s">'package:flutter/foundation.dart'</span><span class="t-p">;</span>
+<span class="t-k">import</span> <span class="t-s">'package:flutter/widgets.dart'</span><span class="t-p">;</span>
+
+<span class="t-c">/// Scroll physics that always come to rest on an item boundary.</span>
+<span class="t-c">///</span>
+<span class="t-c">/// Works with any scrollable whose items all share one main-axis extent, for</span>
+<span class="t-c">/// example a [ListView] with `itemExtent` set.</span>
+<span class="t-k">class</span> <span class="t-t">SnapScrollPhysics</span> <span class="t-k">extends</span> <span class="t-t">ScrollPhysics</span> <span class="t-b0">{</span>
+  <span class="t-k">const</span> <span class="t-t">SnapScrollPhysics</span><span class="t-b1">(</span><span class="t-b2">{</span><span class="t-k">required</span> <span class="t-k">this</span><span class="t-p">.</span>itemExtent<span class="t-p">,</span> <span class="t-k">super</span><span class="t-p">.</span>parent<span class="t-b2">}</span><span class="t-b1">)</span>
+    <span class="t-p">:</span> <span class="t-f">assert</span><span class="t-b1">(</span>itemExtent <span class="t-p">&gt;</span> <span class="t-n">0</span><span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-c">/// The main-axis extent of every item.</span>
+  <span class="t-k">final</span> <span class="t-t">double</span> itemExtent<span class="t-p">;</span>
+
+  <span class="t-c">// Without this override, combining these physics with the platform's</span>
+  <span class="t-c">// physics would return a plain ScrollPhysics and the snapping would vanish.</span>
+  <span class="t-k">@override</span>
+  <span class="t-t">SnapScrollPhysics</span> <span class="t-m">applyTo</span><span class="t-b1">(</span><span class="t-t">ScrollPhysics</span><span class="t-p">?</span> ancestor<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> <span class="t-t">SnapScrollPhysics</span><span class="t-b2">(</span>
+      itemExtent<span class="t-p">:</span> itemExtent<span class="t-p">,</span>
+      parent<span class="t-p">:</span> <span class="t-m">buildParent</span><span class="t-b3">(</span>ancestor<span class="t-b3">)</span><span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-c">// Lets a Scrollable know that a rebuilt instance carries a new itemExtent.</span>
+  <span class="t-k">@override</span>
+  <span class="t-t">bool</span> <span class="t-m">shouldUpdate</span><span class="t-b1">(</span><span class="t-k">covariant</span> <span class="t-t">SnapScrollPhysics</span> old<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> itemExtent <span class="t-p">!=</span> old<span class="t-p">.</span>itemExtent <span class="t-p">||</span> <span class="t-k">super</span><span class="t-p">.</span><span class="t-m">shouldUpdate</span><span class="t-b2">(</span>old<span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-t">double</span> <span class="t-m">_targetPixels</span><span class="t-b1">(</span>
+    <span class="t-t">ScrollMetrics</span> position<span class="t-p">,</span>
+    <span class="t-t">Tolerance</span> tolerance<span class="t-p">,</span>
+    <span class="t-t">double</span> velocity<span class="t-p">,</span>
+  <span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-t">double</span> item <span class="t-p">=</span> position<span class="t-p">.</span>pixels <span class="t-p">/</span> itemExtent<span class="t-p">;</span>
+    <span class="t-c">// A fling commits to the next item in its direction, however short the</span>
+    <span class="t-c">// drag was. Without a fling, the nearest item wins.</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>velocity <span class="t-p">&lt;</span> <span class="t-p">-</span>tolerance<span class="t-p">.</span>velocity<span class="t-b2">)</span> <span class="t-b2">{</span>
+      item <span class="t-p">-=</span> <span class="t-n">0.5</span><span class="t-p">;</span>
+    <span class="t-b2">}</span> <span class="t-f">else</span> <span class="t-f">if</span> <span class="t-b2">(</span>velocity <span class="t-p">&gt;</span> tolerance<span class="t-p">.</span>velocity<span class="t-b2">)</span> <span class="t-b2">{</span>
+      item <span class="t-p">+=</span> <span class="t-n">0.5</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-f">return</span> <span class="t-m">clampDouble</span><span class="t-b2">(</span>
+      item<span class="t-p">.</span><span class="t-m">roundToDouble</span><span class="t-b3">(</span><span class="t-b3">)</span> <span class="t-p">*</span> itemExtent<span class="t-p">,</span>
+      position<span class="t-p">.</span>minScrollExtent<span class="t-p">,</span>
+      position<span class="t-p">.</span>maxScrollExtent<span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">Simulation</span><span class="t-p">?</span> <span class="t-m">createBallisticSimulation</span><span class="t-b1">(</span>
+    <span class="t-t">ScrollMetrics</span> position<span class="t-p">,</span>
+    <span class="t-t">double</span> velocity<span class="t-p">,</span>
+  <span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-c">// Out of range and not heading back in: let the parent physics bring the</span>
+    <span class="t-c">// position back, exactly as it would without snapping.</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span><span class="t-b3">(</span>velocity <span class="t-p">&lt;=</span> <span class="t-n">0.0</span> <span class="t-p">&amp;&amp;</span> position<span class="t-p">.</span>pixels <span class="t-p">&lt;=</span> position<span class="t-p">.</span>minScrollExtent<span class="t-b3">)</span> <span class="t-p">||</span>
+        <span class="t-b3">(</span>velocity <span class="t-p">&gt;=</span> <span class="t-n">0.0</span> <span class="t-p">&amp;&amp;</span> position<span class="t-p">.</span>pixels <span class="t-p">&gt;=</span> position<span class="t-p">.</span>maxScrollExtent<span class="t-b3">)</span><span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-f">return</span> <span class="t-k">super</span><span class="t-p">.</span><span class="t-m">createBallisticSimulation</span><span class="t-b3">(</span>position<span class="t-p">,</span> velocity<span class="t-b3">)</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-k">final</span> <span class="t-t">Tolerance</span> tolerance <span class="t-p">=</span> <span class="t-m">toleranceFor</span><span class="t-b2">(</span>position<span class="t-b2">)</span><span class="t-p">;</span>
+    <span class="t-k">final</span> <span class="t-t">double</span> target <span class="t-p">=</span> <span class="t-m">_targetPixels</span><span class="t-b2">(</span>position<span class="t-p">,</span> tolerance<span class="t-p">,</span> velocity<span class="t-b2">)</span><span class="t-p">;</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>target <span class="t-p">!=</span> position<span class="t-p">.</span>pixels<span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-f">return</span> <span class="t-t">ScrollSpringSimulation</span><span class="t-b3">(</span>
+        spring<span class="t-p">,</span>
+        position<span class="t-p">.</span>pixels<span class="t-p">,</span>
+        target<span class="t-p">,</span>
+        velocity<span class="t-p">,</span>
+        tolerance<span class="t-p">:</span> tolerance<span class="t-p">,</span>
+      <span class="t-b3">)</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-c">// Already resting on an item boundary: nothing to simulate.</span>
+    <span class="t-f">return</span> <span class="t-k">null</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+<span class="t-b0">}</span>
+
+<span class="t-c">/// A horizontal strip of cards that snaps to each card.</span>
+<span class="t-k">class</span> <span class="t-t">SnappingCards</span> <span class="t-k">extends</span> <span class="t-t">StatelessWidget</span> <span class="t-b0">{</span>
+  <span class="t-k">const</span> <span class="t-t">SnappingCards</span><span class="t-b1">(</span><span class="t-b2">{</span><span class="t-k">super</span><span class="t-p">.</span>key<span class="t-p">,</span> <span class="t-k">this</span><span class="t-p">.</span>controller<span class="t-p">,</span> <span class="t-k">this</span><span class="t-p">.</span>itemCount <span class="t-p">=</span> <span class="t-n">12</span><span class="t-b2">}</span><span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-k">static</span> <span class="t-k">const</span> <span class="t-t">double</span> itemExtent <span class="t-p">=</span> <span class="t-n">220.0</span><span class="t-p">;</span>
+
+  <span class="t-k">final</span> <span class="t-t">ScrollController</span><span class="t-p">?</span> controller<span class="t-p">;</span>
+  <span class="t-k">final</span> <span class="t-t">int</span> itemCount<span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">Widget</span> <span class="t-m">build</span><span class="t-b1">(</span><span class="t-t">BuildContext</span> context<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> <span class="t-t">ListView</span><span class="t-p">.</span><span class="t-m">builder</span><span class="t-b2">(</span>
+      controller<span class="t-p">:</span> controller<span class="t-p">,</span>
+      scrollDirection<span class="t-p">:</span> <span class="t-t">Axis</span><span class="t-p">.</span>horizontal<span class="t-p">,</span>
+      physics<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">SnapScrollPhysics</span><span class="t-b3">(</span>itemExtent<span class="t-p">:</span> itemExtent<span class="t-b3">)</span><span class="t-p">,</span>
+      itemExtent<span class="t-p">:</span> itemExtent<span class="t-p">,</span>
+      itemCount<span class="t-p">:</span> itemCount<span class="t-p">,</span>
+      itemBuilder<span class="t-p">:</span> <span class="t-b3">(</span><span class="t-t">BuildContext</span> context<span class="t-p">,</span> <span class="t-t">int</span> index<span class="t-b3">)</span> <span class="t-b3">{</span>
+        <span class="t-f">return</span> <span class="t-t">Padding</span><span class="t-b4">(</span>
+          padding<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">EdgeInsets</span><span class="t-p">.</span><span class="t-m">all</span><span class="t-b5">(</span><span class="t-n">8.0</span><span class="t-b5">)</span><span class="t-p">,</span>
+          child<span class="t-p">:</span> <span class="t-t">DecoratedBox</span><span class="t-b5">(</span>
+            decoration<span class="t-p">:</span> <span class="t-t">BoxDecoration</span><span class="t-b0">(</span>
+              color<span class="t-p">:</span> <span class="t-t">Color</span><span class="t-p">.</span><span class="t-m">lerp</span><span class="t-b1">(</span>
+                <span class="t-k">const</span> <span class="t-t">Color</span><span class="t-b2">(</span><span class="t-n">0xFF5B8DEE</span><span class="t-b2">)</span><span class="t-p">,</span>
+                <span class="t-k">const</span> <span class="t-t">Color</span><span class="t-b2">(</span><span class="t-n">0xFF7A4DF0</span><span class="t-b2">)</span><span class="t-p">,</span>
+                index <span class="t-p">/</span> itemCount<span class="t-p">,</span>
+              <span class="t-b1">)</span><span class="t-p">,</span>
+              borderRadius<span class="t-p">:</span> <span class="t-t">BorderRadius</span><span class="t-p">.</span><span class="t-m">circular</span><span class="t-b1">(</span><span class="t-n">16.0</span><span class="t-b1">)</span><span class="t-p">,</span>
+            <span class="t-b0">)</span><span class="t-p">,</span>
+            child<span class="t-p">:</span> <span class="t-t">Center</span><span class="t-b0">(</span>
+              child<span class="t-p">:</span> <span class="t-t">Text</span><span class="t-b1">(</span>
+                <span class="t-s">'$index'</span><span class="t-p">,</span>
+                style<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">TextStyle</span><span class="t-b2">(</span>
+                  color<span class="t-p">:</span> <span class="t-t">Color</span><span class="t-b3">(</span><span class="t-n">0xFFFFFFFF</span><span class="t-b3">)</span><span class="t-p">,</span>
+                  fontSize<span class="t-p">:</span> <span class="t-n">40.0</span><span class="t-p">,</span>
+                <span class="t-b2">)</span><span class="t-p">,</span>
+              <span class="t-b1">)</span><span class="t-p">,</span>
+            <span class="t-b0">)</span><span class="t-p">,</span>
+          <span class="t-b5">)</span><span class="t-p">,</span>
+        <span class="t-b4">)</span><span class="t-p">;</span>
+      <span class="t-b3">}</span><span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="similar-implementations"><span>Similar Implementations</span><a class="anchor" href="#similar-implementations" aria-label="Link to this section">#</a></h2>
+<ul><li><code>PageScrollPhysics</code> in <code>package:flutter/src/widgets/page_view.dart</code> uses the exact same <code>±0.5</code> velocity bias, scaled by <code>position.viewportDimension * viewportFraction</code> instead of a fixed <code>itemExtent</code>.</li><li><code>FixedExtentScrollPhysics</code> in <code>package:flutter/src/widgets/list_wheel_scroll_view.dart</code> snaps cylindrical wheel pickers (<code>CupertinoPicker</code>) to integer item indices.</li></ul>
+</section>
+<div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#why-custom-scrollphysics">Why Custom ScrollPhysics?</a></li><li><a href="#try-it-out">Try it Out</a></li><li><a href="#the-implementation">The Implementation</a></li><li class="sub"><a href="#preserving-the-physics-chain-with-applyto">Preserving the Physics Chain with applyTo</a></li><li class="sub"><a href="#choosing-the-landing-offset">Choosing the Landing Offset</a></li><li class="sub"><a href="#returning-the-ballistic-simulation">Returning the Ballistic Simulation</a></li><li><a href="#full-source-code">Full Source Code</a></li><li><a href="#similar-implementations">Similar Implementations</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>

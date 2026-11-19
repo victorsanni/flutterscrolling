@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>Minimal Viewport | Flutter Scrolling</title>
+<meta name="description" content="Custom RenderBox viewport driven directly by Scrollable and ViewportOffset.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+<script src="../assets/demos.js" defer></script></head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a href="../guides/index.html">Guides</a></li><li><a href="../api/index.html">API</a></li><li><a class="active" href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>Examples</h3><ul><li><a href="../examples/index.html" title="Overview">Overview</a></li><li><a href="../examples/snapping-physics.html" title="Snapping Physics">Snapping Physics</a></li><li><a class="active" href="../examples/minimal-viewport.html" title="Minimal Viewport">Minimal Viewport</a></li><li><a href="../examples/sticky-header.html" title="Sticky Header">Sticky Header</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>Minimal Viewport</h1><p>Custom RenderBox viewport driven directly by Scrollable and ViewportOffset.</p></header>
+<section class="content">
+<p>A complete vertical scroll view built from <code>Scrollable</code> and a single custom <code>RenderBox</code> (<code>RenderBareViewport</code>). It lays out one tall child, reports the viewport and content dimensions to the <code>ViewportOffset</code>, shifts the child by <code>-offset.pixels</code> at paint time, clips to its own bounds, and translates pointer hits to match.</p>
+<h2 id="why-build-a-bare-viewport"><span>Why Build a Bare Viewport?</span><a class="anchor" href="#why-build-a-bare-viewport" aria-label="Link to this section">#</a></h2>
+<p>Between <code>ListView</code>, <code>CustomScrollView</code>, <code>RenderViewport</code>, and a dozen sliver classes, it is easy to assume scrolling is deeply wired into slivers. Building a working scroll view without a single sliver strips away all of that machinery and shows the exact contract between <code>Scrollable</code> and whatever renders the content.</p>
+<p>It is also the real architecture behind <code>SingleChildScrollView</code>, which uses a private <code>_RenderSingleChildViewport</code> rather than a sliver <code>Viewport</code> when all you have is one <code>RenderBox</code> child that fits comfortably in memory.</p>
+<h2 id="try-it-out"><span>Try it Out</span><a class="anchor" href="#try-it-out" aria-label="Link to this section">#</a></h2>
+<p>Drag the list up and down, click any visible item to test hit-testing through the scroll offset, and toggle <code>ClipRect</code> off to peek at how the full child is positioned behind the window.</p>
+<div class="demo" data-demo="viewport">
+<div class="demo-stage">
+<div class="demo-view"><canvas width="260" height="250"></canvas></div>
+<div class="demo-side">
+<div class="demo-heading">RenderBareViewport</div>
+<table class="demo-readout">
+<tr><td>offset.pixels</td><td data-f="pixels">84.0</td></tr>
+<tr><td>_paintOffset</td><td class="hot" data-f="paintOffset">(0.0, -84.0)</td></tr>
+<tr><td>viewportDimension</td><td data-f="viewportDim">178.0</td></tr>
+<tr><td>maxScrollExtent</td><td data-f="maxExtent">242.0</td></tr>
+<tr><td>hitTestChildren</td><td data-f="hit">Item 2</td></tr>
+</table>
+</div>
+</div>
+<div class="demo-controls">
+<label>Compositing</label>
+<button class="demo-btn on" type="button" data-action="toggle-clip">ClipRect: on</button>
+</div>
+<div class="demo-note">Drag to scroll; click a row inside the frame to run <code>addWithPaintOffset</code> hit-testing.</div>
+</div>
+<h2 id="the-implementation"><span>The Implementation</span><a class="anchor" href="#the-implementation" aria-label="Link to this section">#</a></h2>
+<h3 id="connecting-scrollable-to-the-viewport"><span>Connecting <code>Scrollable</code> to the Viewport</span><a class="anchor" href="#connecting-scrollable-to-the-viewport" aria-label="Link to this section">#</a></h3>
+<p><code>Scrollable</code> handles drag gestures, wheel events, physics, ballistic flings, scrollbars, and overscroll indicators. All it asks from you is a <code>viewportBuilder</code> callback that accepts a <code>ViewportOffset</code> and returns the widget that paints the window.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">@override</span>
+<span class="t-t">Widget</span> <span class="t-m">build</span><span class="t-b0">(</span><span class="t-t">BuildContext</span> context<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-f">return</span> <span class="t-t">Scrollable</span><span class="t-b1">(</span>
+    controller<span class="t-p">:</span> controller<span class="t-p">,</span>
+    physics<span class="t-p">:</span> physics<span class="t-p">,</span>
+    viewportBuilder<span class="t-p">:</span> <span class="t-b2">(</span><span class="t-t">BuildContext</span> context<span class="t-p">,</span> <span class="t-t">ViewportOffset</span> offset<span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-f">return</span> <span class="t-t">BareViewport</span><span class="t-b3">(</span>offset<span class="t-p">:</span> offset<span class="t-p">,</span> child<span class="t-p">:</span> child<span class="t-b3">)</span><span class="t-p">;</span>
+    <span class="t-b2">}</span><span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<p>Mixing <code>ViewportElementMixin</code> into <code>BareViewport</code>'s element increments <code>ScrollNotification.depth</code> as notifications bubble past this viewport, matching the behavior of Flutter's built-in viewports when scroll views are nested.</p>
+<h3 id="listening-to-viewportoffset-for-repaints-only"><span>Listening to <code>ViewportOffset</code> for Repaints Only</span><a class="anchor" href="#listening-to-viewportoffset-for-repaints-only" aria-label="Link to this section">#</a></h3>
+<p>Because <code>RenderBareViewport</code> lays out its single child in full up front, scrolling never changes the child's size or layout. Attaching <code>markNeedsPaint</code> (not <code>markNeedsLayout</code>) as the listener on <code>offset</code> means every scroll frame skips layout completely and only repaints inside this render object's own repaint boundary.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">@override</span>
+<span class="t-k">void</span> <span class="t-m">attach</span><span class="t-b0">(</span><span class="t-t">PipelineOwner</span> owner<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-k">super</span><span class="t-p">.</span><span class="t-m">attach</span><span class="t-b1">(</span>owner<span class="t-b1">)</span><span class="t-p">;</span>
+  _offset<span class="t-p">.</span><span class="t-m">addListener</span><span class="t-b1">(</span>markNeedsPaint<span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span>
+
+<span class="t-k">@override</span>
+<span class="t-t">bool</span> <span class="t-k">get</span> isRepaintBoundary <span class="t-p">=&gt;</span> <span class="t-k">true</span><span class="t-p">;</span></code></pre></div>
+<h3 id="reporting-dimensions-in-performlayout"><span>Reporting Dimensions in <code>performLayout</code></span><a class="anchor" href="#reporting-dimensions-in-performlayout" aria-label="Link to this section">#</a></h3>
+<p>During <code>performLayout</code>, the child gets the parent's width constraints and an unbounded height (<code>constraints.widthConstraints()</code>), then <code>RenderBareViewport</code> constrains its own size to the incoming box constraints. Before returning, it fulfills the entire <code>ViewportOffset</code> contract in two calls: <code>applyViewportDimension</code> and <code>applyContentDimensions</code>.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">@override</span>
+<span class="t-k">void</span> <span class="t-m">performLayout</span><span class="t-b0">(</span><span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-k">final</span> <span class="t-t">RenderBox</span><span class="t-p">?</span> child <span class="t-p">=</span> <span class="t-k">this</span><span class="t-p">.</span>child<span class="t-p">;</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>child <span class="t-p">==</span> <span class="t-k">null</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    size <span class="t-p">=</span> constraints<span class="t-p">.</span>smallest<span class="t-p">;</span>
+  <span class="t-b1">}</span> <span class="t-f">else</span> <span class="t-b1">{</span>
+    <span class="t-c">// The child keeps our width limits but may be as tall as it likes.</span>
+    child<span class="t-p">.</span><span class="t-m">layout</span><span class="t-b2">(</span>constraints<span class="t-p">.</span><span class="t-m">widthConstraints</span><span class="t-b3">(</span><span class="t-b3">)</span><span class="t-p">,</span> parentUsesSize<span class="t-p">:</span> <span class="t-k">true</span><span class="t-b2">)</span><span class="t-p">;</span>
+    size <span class="t-p">=</span> constraints<span class="t-p">.</span><span class="t-m">constrain</span><span class="t-b2">(</span>child<span class="t-p">.</span>size<span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-c">// The window or the content may have shrunk under the current offset.</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>offset<span class="t-p">.</span>hasPixels <span class="t-p">&amp;&amp;</span> offset<span class="t-p">.</span>pixels <span class="t-p">&gt;</span> _maxScrollExtent<span class="t-b1">)</span> <span class="t-b1">{</span>
+    offset<span class="t-p">.</span><span class="t-m">correctBy</span><span class="t-b2">(</span>_maxScrollExtent <span class="t-p">-</span> offset<span class="t-p">.</span>pixels<span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-c">// The whole contract with the scroll position, in two calls.</span>
+  offset<span class="t-p">.</span><span class="t-m">applyViewportDimension</span><span class="t-b1">(</span>size<span class="t-p">.</span>height<span class="t-b1">)</span><span class="t-p">;</span>
+  offset<span class="t-p">.</span><span class="t-m">applyContentDimensions</span><span class="t-b1">(</span><span class="t-n">0.0</span><span class="t-p">,</span> _maxScrollExtent<span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<p>If the child shrank while scrolled near the bottom, <code>offset.correctBy(...)</code> silently pulls <code>pixels</code> back into range <em>without</em> notifying listeners mid-layout.</p>
+<h3 id="painting-transforms-and-hit-testing"><span>Painting, Transforms, and Hit Testing</span><a class="anchor" href="#painting-transforms-and-hit-testing" aria-label="Link to this section">#</a></h3>
+<p>When <code>offset.pixels</code> is <code>+150.0</code>, the user has scrolled <code>150px</code> down into the content, so the child must be painted <code>150px</code> <em>upward</em> at <code>Offset(0.0, -offset.pixels)</code>. Three methods must agree on that exact <code>_paintOffset</code>: <code>paint</code>, <code>applyPaintTransform</code>, and <code>hitTestChildren</code>.</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">Offset</span> <span class="t-k">get</span> _paintOffset <span class="t-p">=&gt;</span> <span class="t-t">Offset</span><span class="t-b0">(</span><span class="t-n">0.0</span><span class="t-p">,</span> <span class="t-p">-</span>offset<span class="t-p">.</span>pixels<span class="t-b0">)</span><span class="t-p">;</span>
+
+<span class="t-k">@override</span>
+<span class="t-k">void</span> <span class="t-m">paint</span><span class="t-b0">(</span><span class="t-t">PaintingContext</span> context<span class="t-p">,</span> <span class="t-t">Offset</span> offset<span class="t-b0">)</span> <span class="t-b0">{</span>
+  <span class="t-k">final</span> <span class="t-t">RenderBox</span><span class="t-p">?</span> child <span class="t-p">=</span> <span class="t-k">this</span><span class="t-p">.</span>child<span class="t-p">;</span>
+  <span class="t-f">if</span> <span class="t-b1">(</span>child <span class="t-p">==</span> <span class="t-k">null</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+  <span class="t-k">final</span> <span class="t-t">Offset</span> paintOffset <span class="t-p">=</span> _paintOffset<span class="t-p">;</span>
+  _clipRectLayer<span class="t-p">.</span>layer <span class="t-p">=</span> context<span class="t-p">.</span><span class="t-m">pushClipRect</span><span class="t-b1">(</span>
+    needsCompositing<span class="t-p">,</span>
+    offset<span class="t-p">,</span>
+    <span class="t-t">Offset</span><span class="t-p">.</span>zero <span class="t-p">&amp;</span> size<span class="t-p">,</span>
+    <span class="t-b2">(</span><span class="t-t">PaintingContext</span> context<span class="t-p">,</span> <span class="t-t">Offset</span> offset<span class="t-b2">)</span> <span class="t-b2">{</span>
+      context<span class="t-p">.</span><span class="t-m">paintChild</span><span class="t-b3">(</span>child<span class="t-p">,</span> offset <span class="t-p">+</span> paintOffset<span class="t-b3">)</span><span class="t-p">;</span>
+    <span class="t-b2">}</span><span class="t-p">,</span>
+    oldLayer<span class="t-p">:</span> _clipRectLayer<span class="t-p">.</span>layer<span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span></code></pre></div>
+<p>Reusing <code>_clipRectLayer.layer</code> via <code>LayerHandle&lt;ClipRectLayer&gt;</code> avoids allocating a fresh engine clip layer on every frame, and <code>result.addWithPaintOffset</code> subtracts <code>_paintOffset</code> from incoming tap coordinates so taps hit the row actually drawn under the finger.</p>
+<h2 id="full-source-code"><span>Full Source Code</span><a class="anchor" href="#full-source-code" aria-label="Link to this section">#</a></h2>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-k">import</span> <span class="t-s">'dart:math'</span> <span class="t-k">as</span> math<span class="t-p">;</span>
+
+<span class="t-k">import</span> <span class="t-s">'package:flutter/rendering.dart'</span><span class="t-p">;</span>
+<span class="t-k">import</span> <span class="t-s">'package:flutter/widgets.dart'</span><span class="t-p">;</span>
+
+<span class="t-c">/// A vertical scroll view built from nothing but [Scrollable] and one custom</span>
+<span class="t-c">/// render object.</span>
+<span class="t-k">class</span> <span class="t-t">BareScrollView</span> <span class="t-k">extends</span> <span class="t-t">StatelessWidget</span> <span class="t-b0">{</span>
+  <span class="t-k">const</span> <span class="t-t">BareScrollView</span><span class="t-b1">(</span><span class="t-b2">{</span>
+    <span class="t-k">super</span><span class="t-p">.</span>key<span class="t-p">,</span>
+    <span class="t-k">this</span><span class="t-p">.</span>controller<span class="t-p">,</span>
+    <span class="t-k">this</span><span class="t-p">.</span>physics<span class="t-p">,</span>
+    <span class="t-k">required</span> <span class="t-k">this</span><span class="t-p">.</span>child<span class="t-p">,</span>
+  <span class="t-b2">}</span><span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-k">final</span> <span class="t-t">ScrollController</span><span class="t-p">?</span> controller<span class="t-p">;</span>
+  <span class="t-k">final</span> <span class="t-t">ScrollPhysics</span><span class="t-p">?</span> physics<span class="t-p">;</span>
+  <span class="t-k">final</span> <span class="t-t">Widget</span> child<span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">Widget</span> <span class="t-m">build</span><span class="t-b1">(</span><span class="t-t">BuildContext</span> context<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> <span class="t-t">Scrollable</span><span class="t-b2">(</span>
+      controller<span class="t-p">:</span> controller<span class="t-p">,</span>
+      physics<span class="t-p">:</span> physics<span class="t-p">,</span>
+      viewportBuilder<span class="t-p">:</span> <span class="t-b3">(</span><span class="t-t">BuildContext</span> context<span class="t-p">,</span> <span class="t-t">ViewportOffset</span> offset<span class="t-b3">)</span> <span class="t-b3">{</span>
+        <span class="t-f">return</span> <span class="t-t">BareViewport</span><span class="t-b4">(</span>offset<span class="t-p">:</span> offset<span class="t-p">,</span> child<span class="t-p">:</span> child<span class="t-b4">)</span><span class="t-p">;</span>
+      <span class="t-b3">}</span><span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+<span class="t-b0">}</span>
+
+<span class="t-c">/// Shows a window onto a single child that may be taller than the window.</span>
+<span class="t-k">class</span> <span class="t-t">BareViewport</span> <span class="t-k">extends</span> <span class="t-t">SingleChildRenderObjectWidget</span> <span class="t-b0">{</span>
+  <span class="t-k">const</span> <span class="t-t">BareViewport</span><span class="t-b1">(</span><span class="t-b2">{</span><span class="t-k">super</span><span class="t-p">.</span>key<span class="t-p">,</span> <span class="t-k">required</span> <span class="t-k">this</span><span class="t-p">.</span>offset<span class="t-p">,</span> <span class="t-k">super</span><span class="t-p">.</span>child<span class="t-b2">}</span><span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-c">/// How far the child is scrolled. In practice, the [ScrollPosition] that a</span>
+  <span class="t-c">/// [Scrollable] hands to its viewport builder.</span>
+  <span class="t-k">final</span> <span class="t-t">ViewportOffset</span> offset<span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">RenderBareViewport</span> <span class="t-m">createRenderObject</span><span class="t-b1">(</span><span class="t-t">BuildContext</span> context<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">return</span> <span class="t-t">RenderBareViewport</span><span class="t-b2">(</span>offset<span class="t-p">:</span> offset<span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-k">void</span> <span class="t-m">updateRenderObject</span><span class="t-b1">(</span>
+    <span class="t-t">BuildContext</span> context<span class="t-p">,</span>
+    <span class="t-t">RenderBareViewport</span> renderObject<span class="t-p">,</span>
+  <span class="t-b1">)</span> <span class="t-b1">{</span>
+    renderObject<span class="t-p">.</span>offset <span class="t-p">=</span> offset<span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">SingleChildRenderObjectElement</span> <span class="t-m">createElement</span><span class="t-b1">(</span><span class="t-b1">)</span> <span class="t-p">=&gt;</span> <span class="t-t">_BareViewportElement</span><span class="t-b1">(</span><span class="t-k">this</span><span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span>
+
+<span class="t-c">// Counts this viewport in the `depth` of scroll notifications that bubble</span>
+<span class="t-c">// through it, the same way the framework's own viewports do.</span>
+<span class="t-k">class</span> <span class="t-t">_BareViewportElement</span> <span class="t-k">extends</span> <span class="t-t">SingleChildRenderObjectElement</span>
+    <span class="t-k">with</span> <span class="t-t">NotifiableElementMixin</span><span class="t-p">,</span> <span class="t-t">ViewportElementMixin</span> <span class="t-b0">{</span>
+  <span class="t-t">_BareViewportElement</span><span class="t-b1">(</span><span class="t-t">BareViewport</span> <span class="t-k">super</span><span class="t-p">.</span>widget<span class="t-b1">)</span><span class="t-p">;</span>
+<span class="t-b0">}</span>
+
+<span class="t-k">class</span> <span class="t-t">RenderBareViewport</span> <span class="t-k">extends</span> <span class="t-t">RenderBox</span>
+    <span class="t-k">with</span> <span class="t-t">RenderObjectWithChildMixin</span><span class="t-p">&lt;</span><span class="t-t">RenderBox</span><span class="t-p">&gt;</span> <span class="t-b0">{</span>
+  <span class="t-t">RenderBareViewport</span><span class="t-b1">(</span><span class="t-b2">{</span><span class="t-k">required</span> <span class="t-t">ViewportOffset</span> offset<span class="t-b2">}</span><span class="t-b1">)</span> <span class="t-p">:</span> _offset <span class="t-p">=</span> offset<span class="t-p">;</span>
+
+  <span class="t-t">ViewportOffset</span> <span class="t-k">get</span> offset <span class="t-p">=&gt;</span> _offset<span class="t-p">;</span>
+  <span class="t-t">ViewportOffset</span> _offset<span class="t-p">;</span>
+  <span class="t-k">set</span> <span class="t-m">offset</span><span class="t-b1">(</span><span class="t-t">ViewportOffset</span> value<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>value <span class="t-p">==</span> _offset<span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-f">return</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>attached<span class="t-b2">)</span> <span class="t-b2">{</span>
+      _offset<span class="t-p">.</span><span class="t-m">removeListener</span><span class="t-b3">(</span>markNeedsPaint<span class="t-b3">)</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    _offset <span class="t-p">=</span> value<span class="t-p">;</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>attached<span class="t-b2">)</span> <span class="t-b2">{</span>
+      _offset<span class="t-p">.</span><span class="t-m">addListener</span><span class="t-b3">(</span>markNeedsPaint<span class="t-b3">)</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-c">// A new offset object needs to be told the dimensions again.</span>
+    <span class="t-m">markNeedsLayout</span><span class="t-b2">(</span><span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-c">// Scrolling moves the child; it never changes anyone's size. So a scroll</span>
+  <span class="t-c">// only needs a repaint.</span>
+  <span class="t-k">@override</span>
+  <span class="t-k">void</span> <span class="t-m">attach</span><span class="t-b1">(</span><span class="t-t">PipelineOwner</span> owner<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-k">super</span><span class="t-p">.</span><span class="t-m">attach</span><span class="t-b2">(</span>owner<span class="t-b2">)</span><span class="t-p">;</span>
+    _offset<span class="t-p">.</span><span class="t-m">addListener</span><span class="t-b2">(</span>markNeedsPaint<span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-k">void</span> <span class="t-m">detach</span><span class="t-b1">(</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    _offset<span class="t-p">.</span><span class="t-m">removeListener</span><span class="t-b2">(</span>markNeedsPaint<span class="t-b2">)</span><span class="t-p">;</span>
+    <span class="t-k">super</span><span class="t-p">.</span><span class="t-m">detach</span><span class="t-b2">(</span><span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-c">// Keeps those repaints from spreading to our ancestors.</span>
+  <span class="t-k">@override</span>
+  <span class="t-t">bool</span> <span class="t-k">get</span> isRepaintBoundary <span class="t-p">=&gt;</span> <span class="t-k">true</span><span class="t-p">;</span>
+
+  <span class="t-t">double</span> <span class="t-k">get</span> _maxScrollExtent <span class="t-b1">{</span>
+    <span class="t-k">final</span> <span class="t-t">RenderBox</span><span class="t-p">?</span> child <span class="t-p">=</span> <span class="t-k">this</span><span class="t-p">.</span>child<span class="t-p">;</span>
+    <span class="t-f">return</span> child <span class="t-p">==</span> <span class="t-k">null</span> <span class="t-p">?</span> <span class="t-n">0.0</span> <span class="t-p">:</span> math<span class="t-p">.</span><span class="t-m">max</span><span class="t-b2">(</span><span class="t-n">0.0</span><span class="t-p">,</span> child<span class="t-p">.</span>size<span class="t-p">.</span>height <span class="t-p">-</span> size<span class="t-p">.</span>height<span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-k">void</span> <span class="t-m">performLayout</span><span class="t-b1">(</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-k">final</span> <span class="t-t">RenderBox</span><span class="t-p">?</span> child <span class="t-p">=</span> <span class="t-k">this</span><span class="t-p">.</span>child<span class="t-p">;</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>child <span class="t-p">==</span> <span class="t-k">null</span><span class="t-b2">)</span> <span class="t-b2">{</span>
+      size <span class="t-p">=</span> constraints<span class="t-p">.</span>smallest<span class="t-p">;</span>
+    <span class="t-b2">}</span> <span class="t-f">else</span> <span class="t-b2">{</span>
+      <span class="t-c">// The child keeps our width limits but may be as tall as it likes.</span>
+      child<span class="t-p">.</span><span class="t-m">layout</span><span class="t-b3">(</span>constraints<span class="t-p">.</span><span class="t-m">widthConstraints</span><span class="t-b4">(</span><span class="t-b4">)</span><span class="t-p">,</span> parentUsesSize<span class="t-p">:</span> <span class="t-k">true</span><span class="t-b3">)</span><span class="t-p">;</span>
+      size <span class="t-p">=</span> constraints<span class="t-p">.</span><span class="t-m">constrain</span><span class="t-b3">(</span>child<span class="t-p">.</span>size<span class="t-b3">)</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+
+    <span class="t-c">// The window or the content may have shrunk under the current offset.</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>offset<span class="t-p">.</span>hasPixels <span class="t-p">&amp;&amp;</span> offset<span class="t-p">.</span>pixels <span class="t-p">&gt;</span> _maxScrollExtent<span class="t-b2">)</span> <span class="t-b2">{</span>
+      offset<span class="t-p">.</span><span class="t-m">correctBy</span><span class="t-b3">(</span>_maxScrollExtent <span class="t-p">-</span> offset<span class="t-p">.</span>pixels<span class="t-b3">)</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+
+    <span class="t-c">// The whole contract with the scroll position, in two calls.</span>
+    offset<span class="t-p">.</span><span class="t-m">applyViewportDimension</span><span class="t-b2">(</span>size<span class="t-p">.</span>height<span class="t-b2">)</span><span class="t-p">;</span>
+    offset<span class="t-p">.</span><span class="t-m">applyContentDimensions</span><span class="t-b2">(</span><span class="t-n">0.0</span><span class="t-p">,</span> _maxScrollExtent<span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-t">Offset</span> <span class="t-k">get</span> _paintOffset <span class="t-p">=&gt;</span> <span class="t-t">Offset</span><span class="t-b1">(</span><span class="t-n">0.0</span><span class="t-p">,</span> <span class="t-p">-</span>offset<span class="t-p">.</span>pixels<span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-k">void</span> <span class="t-m">paint</span><span class="t-b1">(</span><span class="t-t">PaintingContext</span> context<span class="t-p">,</span> <span class="t-t">Offset</span> offset<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-k">final</span> <span class="t-t">RenderBox</span><span class="t-p">?</span> child <span class="t-p">=</span> <span class="t-k">this</span><span class="t-p">.</span>child<span class="t-p">;</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>child <span class="t-p">==</span> <span class="t-k">null</span><span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-f">return</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-k">final</span> <span class="t-t">Offset</span> paintOffset <span class="t-p">=</span> _paintOffset<span class="t-p">;</span>
+    _clipRectLayer<span class="t-p">.</span>layer <span class="t-p">=</span> context<span class="t-p">.</span><span class="t-m">pushClipRect</span><span class="t-b2">(</span>
+      needsCompositing<span class="t-p">,</span>
+      offset<span class="t-p">,</span>
+      <span class="t-t">Offset</span><span class="t-p">.</span>zero <span class="t-p">&amp;</span> size<span class="t-p">,</span>
+      <span class="t-b3">(</span><span class="t-t">PaintingContext</span> context<span class="t-p">,</span> <span class="t-t">Offset</span> offset<span class="t-b3">)</span> <span class="t-b3">{</span>
+        context<span class="t-p">.</span><span class="t-m">paintChild</span><span class="t-b4">(</span>child<span class="t-p">,</span> offset <span class="t-p">+</span> paintOffset<span class="t-b4">)</span><span class="t-p">;</span>
+      <span class="t-b3">}</span><span class="t-p">,</span>
+      oldLayer<span class="t-p">:</span> _clipRectLayer<span class="t-p">.</span>layer<span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-k">final</span> <span class="t-t">LayerHandle</span><span class="t-p">&lt;</span><span class="t-t">ClipRectLayer</span><span class="t-p">&gt;</span> _clipRectLayer <span class="t-p">=</span>
+      <span class="t-t">LayerHandle</span><span class="t-p">&lt;</span><span class="t-t">ClipRectLayer</span><span class="t-p">&gt;</span><span class="t-b1">(</span><span class="t-b1">)</span><span class="t-p">;</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-k">void</span> <span class="t-m">dispose</span><span class="t-b1">(</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    _clipRectLayer<span class="t-p">.</span>layer <span class="t-p">=</span> <span class="t-k">null</span><span class="t-p">;</span>
+    <span class="t-k">super</span><span class="t-p">.</span><span class="t-m">dispose</span><span class="t-b2">(</span><span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-c">// Paint, transforms and hit testing must agree on where the child is.</span>
+  <span class="t-k">@override</span>
+  <span class="t-k">void</span> <span class="t-m">applyPaintTransform</span><span class="t-b1">(</span><span class="t-t">RenderBox</span> child<span class="t-p">,</span> <span class="t-t">Matrix4</span> transform<span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-k">final</span> <span class="t-t">Offset</span> paintOffset <span class="t-p">=</span> _paintOffset<span class="t-p">;</span>
+    transform<span class="t-p">.</span><span class="t-m">translateByDouble</span><span class="t-b2">(</span>paintOffset<span class="t-p">.</span>dx<span class="t-p">,</span> paintOffset<span class="t-p">.</span>dy<span class="t-p">,</span> <span class="t-n">0.0</span><span class="t-p">,</span> <span class="t-n">1.0</span><span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+
+  <span class="t-k">@override</span>
+  <span class="t-t">bool</span> <span class="t-m">hitTestChildren</span><span class="t-b1">(</span><span class="t-t">BoxHitTestResult</span> result<span class="t-p">,</span> <span class="t-b2">{</span><span class="t-k">required</span> <span class="t-t">Offset</span> position<span class="t-b2">}</span><span class="t-b1">)</span> <span class="t-b1">{</span>
+    <span class="t-k">final</span> <span class="t-t">RenderBox</span><span class="t-p">?</span> child <span class="t-p">=</span> <span class="t-k">this</span><span class="t-p">.</span>child<span class="t-p">;</span>
+    <span class="t-f">if</span> <span class="t-b2">(</span>child <span class="t-p">==</span> <span class="t-k">null</span><span class="t-b2">)</span> <span class="t-b2">{</span>
+      <span class="t-f">return</span> <span class="t-k">false</span><span class="t-p">;</span>
+    <span class="t-b2">}</span>
+    <span class="t-f">return</span> result<span class="t-p">.</span><span class="t-m">addWithPaintOffset</span><span class="t-b2">(</span>
+      offset<span class="t-p">:</span> _paintOffset<span class="t-p">,</span>
+      position<span class="t-p">:</span> position<span class="t-p">,</span>
+      hitTest<span class="t-p">:</span> <span class="t-b3">(</span><span class="t-t">BoxHitTestResult</span> result<span class="t-p">,</span> <span class="t-t">Offset</span> transformed<span class="t-b3">)</span> <span class="t-b3">{</span>
+        <span class="t-f">return</span> child<span class="t-p">.</span><span class="t-m">hitTest</span><span class="t-b4">(</span>result<span class="t-p">,</span> position<span class="t-p">:</span> transformed<span class="t-b4">)</span><span class="t-p">;</span>
+      <span class="t-b3">}</span><span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">;</span>
+  <span class="t-b1">}</span>
+<span class="t-b0">}</span></code></pre></div>
+<h2 id="similar-implementations"><span>Similar Implementations</span><a class="anchor" href="#similar-implementations" aria-label="Link to this section">#</a></h2>
+<ul><li><code>_RenderSingleChildViewport</code> in <code>package:flutter/src/widgets/single_child_scroll_view.dart</code> adds horizontal axis directions, <code>reverse</code>, <code>clipBehavior</code>, and <code>RenderAbstractViewport</code> reveal support on top of this exact skeleton.</li><li><code>RenderListWheelViewport</code> in <code>package:flutter/src/rendering/list_wheel_viewport.dart</code> connects to <code>ViewportOffset</code> the same way while painting children wrapped around a 3D cylinder instead of a flat plane.</li></ul>
+</section>
+<div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#why-build-a-bare-viewport">Why Build a Bare Viewport?</a></li><li><a href="#try-it-out">Try it Out</a></li><li><a href="#the-implementation">The Implementation</a></li><li class="sub"><a href="#connecting-scrollable-to-the-viewport">Connecting Scrollable to the Viewport</a></li><li class="sub"><a href="#listening-to-viewportoffset-for-repaints-only">Listening to ViewportOffset for Repaints Only</a></li><li class="sub"><a href="#reporting-dimensions-in-performlayout">Reporting Dimensions in performLayout</a></li><li class="sub"><a href="#painting-transforms-and-hit-testing">Painting, Transforms, and Hit Testing</a></li><li><a href="#full-source-code">Full Source Code</a></li><li><a href="#similar-implementations">Similar Implementations</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>

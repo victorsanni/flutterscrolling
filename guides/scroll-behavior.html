@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<title>Scroll Behavior | Flutter Scrolling</title>
+<meta name="description" content="How ScrollConfiguration and ScrollBehavior supply default physics, scrollbars, overscroll indicators, and drag devices.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+<script src="../assets/search-index.js" defer></script>
+<script src="../assets/site.js" defer></script>
+</head>
+<body data-root="../">
+<nav class="navbar">
+<button class="navbar-toggle has-sidebar" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+</button>
+<a class="navbar-brand" href="../index.html"><img alt="" src="../assets/images/logo.svg"><span>Flutter Scrolling</span></a>
+<div class="navbar-divider"></div>
+<ul class="navbar-nav"><li><a class="active" href="../guides/index.html">Guides</a></li><li><a href="../api/index.html">API</a></li><li><a href="../examples/index.html">Examples</a></li></ul>
+<button class="navbar-search" id="search-trigger" type="button" aria-label="Search docs">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"></circle><path d="M11 11 L14 14"></path></svg>
+<span>Search docs...</span><span class="kbd">⌘K</span>
+</button>
+<a class="btn-nav" href="../guides/how-scrolling-works.html">Start here</a>
+</nav>
+<div class="docs">
+<nav class="sidebar" id="sidebar" aria-label="Section"><div class="sidebar-group"><h3>Guides</h3><ul><li><a href="../guides/index.html" title="Overview">Overview</a></li><li><a href="../guides/how-scrolling-works.html" title="How Scrolling Works">How Scrolling Works</a></li><li><a href="../guides/scroll-position.html" title="Scroll Position">Scroll Position</a></li><li><a href="../guides/scroll-physics.html" title="Scroll Physics">Scroll Physics</a></li><li><a href="../guides/scroll-activities.html" title="Scroll Activities">Scroll Activities</a></li><li><a href="../guides/scroll-controllers.html" title="Scroll Controllers">Scroll Controllers</a></li><li><a href="../guides/scroll-notifications.html" title="Scroll Notifications">Scroll Notifications</a></li><li><a class="active" href="../guides/scroll-behavior.html" title="Scroll Behavior">Scroll Behavior</a></li></ul></div><div class="sidebar-group"><h3>Slivers</h3><ul><li><a href="../guides/viewports.html" title="Viewports">Viewports</a></li><li><a href="../guides/sliver-layout.html" title="Sliver Layout">Sliver Layout</a></li><li><a href="../guides/lazy-children.html" title="Lazy Children">Lazy Children</a></li><li><a href="../guides/pinned-headers.html" title="Pinned Headers">Pinned Headers</a></li><li><a href="../guides/scroll-views.html" title="Scroll Views">Scroll Views</a></li></ul></div><div class="sidebar-group"><h3>Going Further</h3><ul><li><a href="../guides/revealing-content.html" title="Revealing Content">Revealing Content</a></li><li><a href="../guides/nested-scrolling.html" title="Nested Scrolling">Nested Scrolling</a></li><li><a href="../guides/two-dimensional-scrolling.html" title="2D Scrolling">2D Scrolling</a></li></ul></div></nav><div class="sidebar-barrier" id="sidebar-barrier"></div>
+<main class="docs-main"><div class="docs-row"><div class="docs-content">
+<header class="page-header"><h1>Scroll Behavior</h1><p>How ScrollConfiguration and ScrollBehavior supply default physics, scrollbars, overscroll indicators, and drag devices.</p></header>
+<section class="content">
+<p>This guide walks experienced Flutter developers through <code>ScrollBehavior</code> and <code>ScrollConfiguration</code>. By the end, you'll understand where default iOS bounce vs Android stretch comes from, why desktop mouse dragging is disabled by default (and how to enable it in three lines), and how to swap scrollbars or overscroll effects across one screen or your whole app. We'll skip custom <code>ScrollPhysics</code> math and sliver layout — this is about ambient scrolling policy, and only ambient policy.</p>
+<h2 id="what-this-guide-covers"><span>What This Guide Covers</span><a class="anchor" href="#what-this-guide-covers" aria-label="Link to this section">#</a></h2>
+<ul><li><strong><code>ScrollBehavior</code> vs <code>ScrollConfiguration</code></strong> — The policy object and the <code>InheritedWidget</code> that distributes it.</li><li><strong>The Four Things <code>ScrollBehavior</code> Controls</strong> — Default physics, scrollbars, overscroll indicators, and <code>dragDevices</code>.</li><li><strong><code>copyWith</code> vs Subclassing</strong> — Changing behavior for one subtree without writing a new class.</li><li><strong>Enabling Mouse and Trackpad Dragging</strong> — Why <code>PointerDeviceKind.mouse</code> is excluded by default and how to opt in.</li><li><strong>Common Pitfalls</strong> — Overwriting <code>MaterialScrollBehavior</code> accidentally and stacking duplicate <code>Scrollbar</code>s.</li></ul>
+<h2 id="scrollbehavior-vs-scrollconfiguration"><span><code>ScrollBehavior</code> vs <code>ScrollConfiguration</code></span><a class="anchor" href="#scrollbehavior-vs-scrollconfiguration" aria-label="Link to this section">#</a></h2>
+<p>Whenever a <code>Scrollable</code> builds without an explicit <code>physics:</code> argument, where does it get <code>BouncingScrollPhysics</code> on iOS and <code>ClampingScrollPhysics</code> on Android?</p>
+<p>It reads <code>ScrollConfiguration.of(context)</code>, an <code>InheritedWidget</code> that holds a <code>ScrollBehavior</code> instance:</p>
+<ul><li><code>MaterialApp</code> installs <code>MaterialScrollBehavior</code> at the root of your app (unless you pass <code>MaterialApp(scrollBehavior: ...)</code>).</li><li><code>CupertinoApp</code> installs <code>CupertinoScrollBehavior</code>.</li><li>Bare <code>WidgetsApp</code> (or tests using <code>Directionality</code> alone) falls back to the base <code>ScrollBehavior</code>.</li></ul>
+<h2 id="the-four-things-scrollbehavior-controls"><span>The Four Things <code>ScrollBehavior</code> Controls</span><a class="anchor" href="#the-four-things-scrollbehavior-controls" aria-label="Link to this section">#</a></h2>
+<p>During <code>ScrollableState.build</code> and <code>_updatePosition</code>, <code>Scrollable</code> asks the ambient <code>ScrollBehavior</code> four questions:</p>
+<ol><li><strong><code>getScrollPhysics(BuildContext context)</code></strong> — Returns the ambient <code>ScrollPhysics</code> chain. On <code>iOS</code> and <code>macOS</code>, base <code>ScrollBehavior</code> returns <code>BouncingScrollPhysics(parent: RangeMaintainingScrollPhysics())</code>; on <code>android</code>, <code>fuchsia</code>, <code>linux</code>, and <code>windows</code>, it returns <code>ClampingScrollPhysics(parent: RangeMaintainingScrollPhysics())</code>.</li><li><strong><code>buildScrollbar(context, child, details)</code></strong> — Wraps the viewport in a platform scrollbar on desktop platforms (<code>macOS</code>, <code>linux</code>, <code>windows</code>). <code>MaterialScrollBehavior</code> wraps with <code>Scrollbar</code>; <code>CupertinoScrollBehavior</code> wraps with <code>CupertinoScrollbar</code>. On mobile touch platforms, it returns <code>child</code> untouched unless you add a <code>Scrollbar</code> widget yourself.</li><li><strong><code>buildOverscrollIndicator(context, child, details)</code></strong> — Wraps the viewport in an edge effect when clamping physics refuse movement. <code>MaterialScrollBehavior</code> wraps Android views in <code>StretchingOverscrollIndicator</code> (under Material 3) or <code>GlowingOverscrollIndicator</code> (Material 2); iOS needs none because <code>BouncingScrollPhysics</code> moves the content itself.</li><li><strong><code>dragDevices</code></strong> — Returns the <code>Set&lt;PointerDeviceKind&gt;</code> allowed to start drag gestures (<code>touch</code>, <code>stylus</code>, <code>invertedStylus</code>, <code>trackpad</code>, and <code>unknown</code> by default — <strong>not</strong> <code>mouse</code>).</li></ol>
+<h2 id="copywith-vs-subclassing"><span><code>copyWith</code> vs Subclassing</span><a class="anchor" href="#copywith-vs-subclassing" aria-label="Link to this section">#</a></h2>
+<p>For local tweaks — removing scrollbars around a custom carousel, turning off the Android stretch effect on one screen, or changing physics for a subtree — call <code>ScrollConfiguration.of(context).copyWith(...)</code> instead of writing a subclass:</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">ScrollConfiguration</span><span class="t-b0">(</span>
+  behavior<span class="t-p">:</span> <span class="t-t">ScrollConfiguration</span><span class="t-p">.</span><span class="t-m">of</span><span class="t-b1">(</span>context<span class="t-b1">)</span><span class="t-p">.</span><span class="t-m">copyWith</span><span class="t-b1">(</span>
+    scrollbars<span class="t-p">:</span> <span class="t-k">false</span><span class="t-p">,</span>
+    overscroll<span class="t-p">:</span> <span class="t-k">false</span><span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">,</span>
+  child<span class="t-p">:</span> <span class="t-t">CustomCarousel</span><span class="t-b1">(</span><span class="t-b1">)</span><span class="t-p">,</span>
+<span class="t-b0">)</span></code></pre></div>
+<p>For app-wide policy, pass a custom <code>ScrollBehavior</code> to <code>MaterialApp.scrollBehavior</code>:</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">MaterialApp</span><span class="t-b0">(</span>
+  scrollBehavior<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">MaterialScrollBehavior</span><span class="t-b1">(</span><span class="t-b1">)</span><span class="t-p">.</span><span class="t-m">copyWith</span><span class="t-b1">(</span>
+    physics<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">BouncingScrollPhysics</span><span class="t-b2">(</span>
+      parent<span class="t-p">:</span> <span class="t-t">RangeMaintainingScrollPhysics</span><span class="t-b3">(</span><span class="t-b3">)</span><span class="t-p">,</span>
+    <span class="t-b2">)</span><span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">,</span>
+  home<span class="t-p">:</span> <span class="t-k">const</span> <span class="t-t">HomePage</span><span class="t-b1">(</span><span class="t-b1">)</span><span class="t-p">,</span>
+<span class="t-b0">)</span></code></pre></div>
+<p><strong>Extend or <code>copyWith</code> <code>MaterialScrollBehavior</code> (not base <code>ScrollBehavior</code>) inside a Material app.</strong> Extending raw <code>ScrollBehavior</code> drops Material's desktop <code>Scrollbar</code> and Android's <code>StretchingOverscrollIndicator</code>, reverting Android edges to an old cyan glow or nothing at all.</p>
+<h2 id="enabling-mouse-and-trackpad-dragging"><span>Enabling Mouse and Trackpad Dragging</span><a class="anchor" href="#enabling-mouse-and-trackpad-dragging" aria-label="Link to this section">#</a></h2>
+<p>On web and desktop, Flutter intentionally excludes <code>PointerDeviceKind.mouse</code> from <code>ScrollBehavior.dragDevices</code>: users expect clicking and dragging with a mouse to select text or drag items, while scrolling happens via mouse wheel, trackpad two-finger pan (<code>PointerDeviceKind.trackpad</code>), or dragging the scrollbar thumb.</p>
+<p>For horizontal card carousels or canvas-like surfaces where mouse click-drag <em>should</em> scroll, add <code>PointerDeviceKind.mouse</code> via <code>copyWith</code>:</p>
+<div class="code"><button class="copy" type="button" aria-label="Copy code"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="16" height="16"><rect rx="2" ry="2" x="8" y="8" width="14" height="14"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button><pre><code><span class="t-t">ScrollConfiguration</span><span class="t-b0">(</span>
+  behavior<span class="t-p">:</span> <span class="t-t">ScrollConfiguration</span><span class="t-p">.</span><span class="t-m">of</span><span class="t-b1">(</span>context<span class="t-b1">)</span><span class="t-p">.</span><span class="t-m">copyWith</span><span class="t-b1">(</span>
+    dragDevices<span class="t-p">:</span> <span class="t-p">&lt;</span><span class="t-t">PointerDeviceKind</span><span class="t-p">&gt;</span><span class="t-b2">{</span>
+      <span class="t-t">PointerDeviceKind</span><span class="t-p">.</span>touch<span class="t-p">,</span>
+      <span class="t-t">PointerDeviceKind</span><span class="t-p">.</span>mouse<span class="t-p">,</span>
+      <span class="t-t">PointerDeviceKind</span><span class="t-p">.</span>trackpad<span class="t-p">,</span>
+    <span class="t-b2">}</span><span class="t-p">,</span>
+  <span class="t-b1">)</span><span class="t-p">,</span>
+  child<span class="t-p">:</span> <span class="t-t">PageView</span><span class="t-b1">(</span>children<span class="t-p">:</span> pages<span class="t-b1">)</span><span class="t-p">,</span>
+<span class="t-b0">)</span></code></pre></div>
+<h2 id="common-pitfalls"><span>Common Pitfalls</span><a class="anchor" href="#common-pitfalls" aria-label="Link to this section">#</a></h2>
+<p><strong>Wrapping a desktop <code>ListView</code> in <code>Scrollbar</code> without a shared <code>ScrollController</code>.</strong> On macOS, Windows, and Linux, <code>MaterialScrollBehavior</code> <em>already</em> wraps every vertical scroll view in an automatic <code>Scrollbar</code>. Adding a manual <code>Scrollbar(child: ListView(...))</code> on desktop draws two scrollbars — or triggers a <code>Scrollbar</code> position assertion unless you either pass the same <code>controller</code> to both or set <code>scrollbars: false</code> on <code>ScrollConfiguration</code>.</p>
+<p><strong>Passing <code>physics:</code> on a <code>ListView</code> expecting it to replace <code>ScrollBehavior</code> completely.</strong> Remember from <a href="../guides/scroll-physics.html">Scroll Physics</a> that widget physics <em>prepend</em> onto <code>ScrollBehavior.getScrollPhysics(context)</code> via <code>applyTo</code>. If you pass <code>AlwaysScrollableScrollPhysics()</code> on a <code>ListView</code>, its parent link is still the ambient <code>BouncingScrollPhysics</code> or <code>ClampingScrollPhysics</code> from <code>ScrollBehavior</code>.</p>
+<p>That finishes the widget-and-position half of Flutter scrolling. Next, we cross into the rendering half — starting with <code>Viewport</code> and how a single-child scroll view differs fundamentally from a sliver viewport.</p>
+</section>
+<a class="next" href="../guides/viewports.html"><div><small>Next guide</small><b>Viewports</b></div><span>→</span></a><div class="docs-footer"><footer class="site-footer">
+<p>Unofficial study notes, checked against the Flutter source. Modelled on <a href="https://renderobjects.com" target="_blank" rel="noopener">renderobjects.com</a>.</p>
+<nav><a href="../guides/index.html">Guides</a><a href="../api/index.html">API</a><a href="../examples/index.html">Examples</a></nav>
+</footer></div>
+</div>
+<aside class="toc"><div><h3>On this page</h3><ul><li><a href="#what-this-guide-covers">What This Guide Covers</a></li><li><a href="#scrollbehavior-vs-scrollconfiguration">ScrollBehavior vs ScrollConfiguration</a></li><li><a href="#the-four-things-scrollbehavior-controls">The Four Things ScrollBehavior Controls</a></li><li><a href="#copywith-vs-subclassing">copyWith vs Subclassing</a></li><li><a href="#enabling-mouse-and-trackpad-dragging">Enabling Mouse and Trackpad Dragging</a></li><li><a href="#common-pitfalls">Common Pitfalls</a></li></ul></div></aside></div></main>
+</div>
+</body>
+</html>
